@@ -77,6 +77,9 @@ public class HomeView extends View {
 
     // ---- speed, drawn in the middle of the wallpaper's moon
     static final float MOON_CX = 980f, MOON_CY = 282f, MOON_R = 168f;
+    static final int SPEED_GLOW = 0xFFFF1E46;   // red outer glow around the speed
+    static final float SPEED_GLOW_RADIUS = 30f;
+    static final int SPEED_GLOW_PASSES = 3;      // more passes = brighter glow
     static final float SPEED_SIZE = 150f, SPEED_Y = 318f, MPH_SIZE = 34f, MPH_Y = 370f;
 
     // ---- glass panel look (0 = invisible, 255 = solid). Lower = more see-through.
@@ -399,14 +402,15 @@ public class HomeView extends View {
         text.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         text.setLetterSpacing(-0.02f);
         text.setTextSize(SPEED_SIZE);
-        text.setShadowLayer(22, 0, 4, 0xCC2A0006);
-        c.drawText(num, MOON_CX, SPEED_Y, text);
+        // glow: several passes so it reads as a strong neon halo
+        text.setShadowLayer(SPEED_GLOW_RADIUS, 0, 0, SPEED_GLOW);
+        for (int i = 0; i < SPEED_GLOW_PASSES; i++) c.drawText(num, MOON_CX, SPEED_Y, text);
         text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         text.setLetterSpacing(0.3f);
         text.setTextSize(MPH_SIZE);
         text.setColor(0xEEFFFFFF);
-        text.setShadowLayer(12, 0, 2, 0xCC2A0006);
-        c.drawText("MPH", MOON_CX + MPH_SIZE * 0.15f, MPH_Y, text); // nudge right to balance the trailing letter-space
+        text.setShadowLayer(SPEED_GLOW_RADIUS * 0.6f, 0, 0, SPEED_GLOW);
+        for (int i = 0; i < 2; i++) c.drawText("MPH", MOON_CX + MPH_SIZE * 0.15f, MPH_Y, text); // nudge right to balance the trailing letter-space
         text.clearShadowLayer();
         text.setLetterSpacing(0f);
         c.restore();

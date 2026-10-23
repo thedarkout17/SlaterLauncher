@@ -113,6 +113,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var TILE_COLORS = [["#46E6B6", "#1FAA86"], ["#4DDCEB", "#2A9FDA"], ["#B772F4", "#7A4BE4"], ["#F46AA6", "#CF3569"], ["#F25050", "#C4282B"]];
   var TEAL = "#45D6B4";
   // speed in the moon (same numbers as HomeView.java)
+  var SPEED_GLOW = "#ff1e46", SPEED_GLOW_RADIUS = 30, SPEED_GLOW_PASSES = 3;
   var MOON_CX = 980, MOON_CY = 282, MOON_R = 168, SPEED_SIZE = 150, SPEED_Y = 318, MPH_SIZE = 34, MPH_Y = 370;
   // glass panel look, same values as HomeView.java (0 = invisible, 1 = solid)
   var GLASS_BLUR_ALPHA = 165 / 255, GLASS_TINT = "rgba(255,230,234,.12)", GLASS_SHEEN = "rgba(255,255,255,.10)", APPS_TINT = "rgba(224,36,44,.3)";
@@ -225,14 +226,16 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function speedReadout() {
     ctx.save(); pressScale("speed", MOON_CX, MOON_CY);
     ctx.textAlign = "center"; ctx.fillStyle = "#fff";
-    ctx.shadowColor = "rgba(42,0,6,.8)"; ctx.shadowBlur = 22; ctx.shadowOffsetY = 4;
+    // red outer glow, several passes for a strong neon halo
+    ctx.shadowColor = SPEED_GLOW; ctx.shadowBlur = SPEED_GLOW_RADIUS; ctx.shadowOffsetY = 0;
     if ("letterSpacing" in ctx) ctx.letterSpacing = "-3px";
     ctx.font = "700 " + SPEED_SIZE + "px Roboto, system-ui, sans-serif";
-    ctx.fillText(String(demoMph()), MOON_CX, SPEED_Y);
+    var mphText = String(demoMph());
+    for (var gp = 0; gp < SPEED_GLOW_PASSES; gp++) ctx.fillText(mphText, MOON_CX, SPEED_Y);
     if ("letterSpacing" in ctx) ctx.letterSpacing = "10px";
-    ctx.shadowBlur = 12; ctx.shadowOffsetY = 2; ctx.fillStyle = "rgba(255,255,255,.93)";
+    ctx.shadowBlur = SPEED_GLOW_RADIUS * 0.6; ctx.fillStyle = "rgba(255,255,255,.93)";
     ctx.font = "500 " + MPH_SIZE + "px Roboto, system-ui, sans-serif";
-    ctx.fillText("MPH", MOON_CX + MPH_SIZE * 0.15, MPH_Y);
+    ctx.fillText("MPH", MOON_CX + MPH_SIZE * 0.15, MPH_Y); ctx.fillText("MPH", MOON_CX + MPH_SIZE * 0.15, MPH_Y);
     ctx.restore();
   }
 
