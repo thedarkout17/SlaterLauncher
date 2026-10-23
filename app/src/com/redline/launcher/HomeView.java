@@ -523,6 +523,29 @@ public class HomeView extends View {
         p.setAlpha(255);
     }
 
+    /** Eighth note centred on (cx, cy): rotated oval head, stem and curved flag merged into one path. */
+    private static Path musicNote(float cx, float cy) {
+        Path head = new Path();
+        head.addOval(new RectF(cx - 37, cy + 13, cx + 9, cy + 47), Path.Direction.CW);
+        Matrix m = new Matrix();
+        m.setRotate(-22, cx - 14, cy + 30);
+        head.transform(m);
+
+        Path stem = new Path();
+        stem.addRect(cx, cy - 52, cx + 9, cy + 28, Path.Direction.CW);
+
+        Path flag = new Path();
+        flag.moveTo(cx + 9, cy - 52);
+        flag.cubicTo(cx + 12, cy - 34, cx + 40, cy - 30, cx + 36, cy - 2);
+        flag.cubicTo(cx + 34, cy - 18, cx + 22, cy - 22, cx + 9, cy - 26);
+        flag.close();
+
+        Path note = new Path(head);
+        note.op(stem, Path.Op.UNION);
+        note.op(flag, Path.Op.UNION);
+        return note;
+    }
+
     private void drawTile(Canvas c, int i) {
         float cx = TILE_X[i], cy = TILE_Y, half = TILE_SIZE / 2f;
         c.save();
@@ -588,21 +611,9 @@ public class HomeView extends View {
                 }
                 break;
             }
-            case 3: { // music note
+            case 3: { // music note: one combined shape so it gets a single clean shadow
                 white(0);
-                c.save();
-                c.rotate(-18, cx - 22, cy + 30);
-                tmp.set(cx - 44, cy + 14, cx - 2, cy + 46);
-                c.drawOval(tmp, p);
-                c.restore();
-                tmp.set(cx - 9, cy - 50, cx + 2, cy + 30);
-                c.drawRect(tmp, p);
-                path.reset();
-                path.moveTo(cx - 4, cy - 52);
-                path.cubicTo(cx + 18, cy - 46, cx + 40, cy - 36, cx + 42, cy - 10);
-                path.cubicTo(cx + 34, cy - 24, cx + 18, cy - 28, cx - 4, cy - 26);
-                path.close();
-                c.drawPath(path, p);
+                c.drawPath(musicNote(cx, cy), p);
                 break;
             }
             case 4: { // play
