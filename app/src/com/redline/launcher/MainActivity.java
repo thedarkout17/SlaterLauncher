@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -26,6 +28,8 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
 
     private static final int REQ_WALLPAPER = 41;
     private static final int REQ_LOCATION = 42;
+    private static final int REQ_HOME = 43;
+    private boolean homePromptShown; // once per app start
     private HomeView home;
     private MediaHelper media;
     private SpeedHelper speed;
@@ -68,6 +72,62 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
         media.start();
         speed.start();
         home.invalidate();
+        maybeAskToBeHome();
+    }
+
+    // ------------------------------------------------------------------ default home screen
+
+    /** True when the Home button opens this launcher. */
+    private boolean isDefaultHome() {
+        Intent i = new Intent(Intent.ACTION_MAIN);
+        i.addCategory(Intent.CATEGORY_HOME);
+        ResolveInfo ri = getPackageManager().resolveActivity(i, PackageManager.MATCH_DEFAULT_ONLY);
+        return ri != null && ri.activityInfo != null && getPackageName().equals(ri.activityInfo.packageName);
+    }
+
+    private void maybeAskToBeHome() {
+        if (homePromptShown || isDefaultHome()) return;
+        if (getSharedPreferences("app", MODE_PRIVATE).getBoolean("neverAskHome", false)) return;
+        homePromptShown = true;
+        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle("Make this your home screen?")
+                .setMessage("The Home button still opens your old launcher. Tap Set as home, then choose "
+                        + "Redline Launcher and tap Always if asked.")
+                .setPositiveButton("Set as home", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) { requestDefaultHome(); }
+                })
+                .setNegativeButton("Not now", null)
+                .setNeutralButton("Don't ask again", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        getSharedPreferences("app", MODE_PRIVATE).edit().putBoolean("neverAskHome", true).apply();
+                    }
+                })
+                .show();
+    }
+
+    /** Ask Android to make this the home app, using the best method the unit supports. */
+    private void requestDefaultHome() {
+        // Android 10+: the system "Set as default home app?" dialog (RoleManager, called by name
+        // so the app still builds against the Android 9 SDK).
+        if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                Object rm = getSystemService("role");
+                Intent r = (Intent) rm.getClass().getMethod("createRequestRoleIntent", String.class)
+                        .invoke(rm, "android.app.role.HOME");
+                startActivityForResult(r, REQ_HOME);
+                return;
+            } catch (Exception ignored) { }
+        }
+        // Older Android or a unit without that dialog: open the Home app settings screen.
+        if (Slots.start(this, new Intent(Settings.ACTION_HOME_SETTINGS))) return;
+        // Last resort: the system app chooser, by briefly asking for HOME.
+        Intent chooser = new Intent(Intent.ACTION_MAIN);
+        chooser.addCategory(Intent.CATEGORY_HOME);
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (!Slots.start(this, Intent.createChooser(chooser, "Choose your home screen"))) {
+            Toast.makeText(this, "Open Settings > Apps > Default apps > Home app and pick Redline Launcher",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override protected void onPause() {
@@ -152,7 +212,7 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
 
     @Override public void onBackgroundLongPress() {
         String[] items = {"Change wallpaper", "Use the default wallpaper", "Show song info (music access)",
-                "Android settings", "Choose a different home app"};
+                "Android settings", "Choose a different home app", "Make this my home screen"};
         new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
                 .setTitle("Redline Launcher")
                 .setItems(items, new DialogInterface.OnClickListener() {
@@ -172,6 +232,12 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
                                 Intent hi = new Intent(Settings.ACTION_HOME_SETTINGS);
                                 if (!Slots.start(MainActivity.this, hi))
                                     Slots.start(MainActivity.this, new Intent(Settings.ACTION_SETTINGS));
+                                break;
+                            case 5:
+                                getSharedPreferences("app", MODE_PRIVATE).edit().remove("neverAskHome").apply();
+                                if (isDefaultHome()) Toast.makeText(MainActivity.this,
+                                        "Redline Launcher is already your home screen", Toast.LENGTH_SHORT).show();
+                                else requestDefaultHome();
                                 break;
                         }
                     }
@@ -194,6 +260,15 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
 
     @Override protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
+        if (req == REQ_HOME) {
+            if (isDefaultHome()) {
+                Toast.makeText(this, "Done. The Home button now opens Redline Launcher", Toast.LENGTH_LONG).show();
+            } else {
+                // The role dialog was declined or isn't honoured on this unit; try the settings screen.
+                Slots.start(this, new Intent(Settings.ACTION_HOME_SETTINGS));
+            }
+            return;
+        }
         if (req != REQ_WALLPAPER || res != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
         try {
