@@ -365,17 +365,6 @@ public class HomeView extends View {
         float ease = t < 0 ? 0f : 1f - (float) Math.pow(1f - t, 3);   // ease-out
         float bump = t < 0 ? 0f : (float) Math.sin(Math.PI * t);      // 0 -> 1 -> 0
 
-        // ripple ring
-        if (t >= 0) {
-            p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);
-            p.setStrokeWidth(4f);
-            p.setColor(Color.WHITE);
-            p.setAlpha((int) (200 * (1f - t)));
-            c.drawCircle(cx, cy, 42 + 46 * ease, p);
-            p.setAlpha(255);
-        }
-
         c.save();
         float s = press("apps") * (1f + 0.08f * bump);
         c.scale(s, s, cx, cy);

@@ -232,10 +232,6 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     var cx = 115, cy = 997, t = -1;
     if (appsSpinStart >= 0) { t = (performance.now() - appsSpinStart) / APPS_SPIN_MS; if (t >= 1) { t = -1; appsSpinStart = -1; } }
     var ease = t < 0 ? 0 : 1 - Math.pow(1 - t, 3), bump = t < 0 ? 0 : Math.sin(Math.PI * t);
-    if (t >= 0) {
-      ctx.save(); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,255,255," + (0.78 * (1 - t)) + ")";
-      ctx.beginPath(); ctx.arc(cx, cy, 42 + 46 * ease, 0, 7); ctx.stroke(); ctx.restore();
-    }
     ctx.save(); pressScale("apps", cx, cy);
     var k = 1 + 0.08 * bump; ctx.translate(cx, cy); ctx.scale(k, k); ctx.rotate(2 * Math.PI * ease); ctx.translate(-cx, -cy);
     white(5.5); ctx.beginPath(); ctx.arc(cx, cy, 42, 0, 7); ctx.stroke();
