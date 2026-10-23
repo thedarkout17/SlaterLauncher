@@ -18,6 +18,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import java.io.File;
@@ -31,6 +32,7 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     private static final int REQ_HOME = 43;
     private boolean homePromptShown; // once per app start
     private HomeView home;
+    private DrawerView drawer;
     private MediaHelper media;
     private SpeedHelper speed;
 
@@ -52,8 +54,31 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
         media = new MediaHelper(this, this);
         speed = new SpeedHelper(this, this);
         home = new HomeView(this, this, media, speed);
-        setContentView(home);
-        home.setWallpaper(loadWallpaper());
+        drawer = new DrawerView(this, new DrawerView.Callback() {
+            @Override public void onLaunch(Slots.AppEntry app) {
+                Intent li = new Intent(Intent.ACTION_MAIN);
+                li.addCategory(Intent.CATEGORY_LAUNCHER);
+                li.setComponent(app.cn);
+                li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                if (Slots.start(MainActivity.this, li)) {
+                    // close the drawer once the app is in front, so Home brings back the home screen
+                    drawer.postDelayed(new Runnable() { @Override public void run() { drawer.hide(false); } }, 400);
+                } else {
+                    Toast.makeText(MainActivity.this, "Couldn't open " + app.label, Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override public void onAppInfo(Slots.AppEntry app) {
+                Slots.start(MainActivity.this, new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + app.cn.getPackageName())));
+            }
+            @Override public void onClose() { drawer.hide(true); }
+        });
+        drawer.setVisibility(View.GONE);
+        FrameLayout root = new FrameLayout(this);
+        root.addView(home);
+        root.addView(drawer);
+        setContentView(root);
+        applyWallpaper(loadWallpaper());
 
         SharedPreferences sp = getSharedPreferences("app", MODE_PRIVATE);
         if (!speed.hasPermission() && !sp.getBoolean("askedLocation", false)) {
@@ -137,7 +162,19 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     }
 
     @Override public void onBackPressed() {
-        // This is the home screen; there is nothing to go back to.
+        // Back closes the app drawer; on the home screen itself there is nothing to go back to.
+        if (drawer.isShowing()) drawer.hide(true);
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Home pressed while we're already in front: close the drawer.
+        if (drawer != null && drawer.isShowing()) drawer.hide(true);
+    }
+
+    private void applyWallpaper(Bitmap b) {
+        home.setWallpaper(b);
+        drawer.setWallpaper(b);
     }
 
     @Override public void onSpeedChanged() {
@@ -178,8 +215,7 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     @Override public void onSlotLongPress(String slot) { Slots.pick(this, slot); }
 
     @Override public void onAppsTap() {
-        startActivity(new Intent(this, AppDrawerActivity.class));
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        drawer.show(Slots.launchableApps(this));
     }
 
     @Override public void onClockTap() {
@@ -221,7 +257,7 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
                             case 0: pickWallpaper(); break;
                             case 1:
                                 new File(getFilesDir(), "wallpaper.jpg").delete();
-                                home.setWallpaper(loadWallpaper());
+                                applyWallpaper(loadWallpaper());
                                 break;
                             case 2: media.openAccessSettings(); break;
                             case 3:
@@ -277,7 +313,7 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
             FileOutputStream out = new FileOutputStream(new File(getFilesDir(), "wallpaper.jpg"));
             b.compress(Bitmap.CompressFormat.JPEG, 94, out);
             out.close();
-            home.setWallpaper(b);
+            applyWallpaper(b);
         } catch (Exception e) {
             Toast.makeText(this, "Couldn't open that image", Toast.LENGTH_LONG).show();
         }

@@ -178,7 +178,7 @@ public class HomeView extends View {
         blur = boxBlur(boxBlur(small, 3), 3);
     }
 
-    private static Bitmap boxBlur(Bitmap src, int r) {
+    static Bitmap boxBlur(Bitmap src, int r) {
         int w = src.getWidth(), h = src.getHeight();
         int[] in = new int[w * h], out = new int[w * h];
         src.getPixels(in, 0, w, 0, 0, w, h);

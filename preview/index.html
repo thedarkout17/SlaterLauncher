@@ -56,10 +56,42 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 }
 .sheet button:hover, .sheet button:focus-visible { background: #ffffff10; outline: none; }
 .sheet .dot { width: 1.6em; height: 1.6em; border-radius: .45em; flex: none; }
-.drawer { position: absolute; inset: 0; background: #140306d9; display: grid; grid-template-columns: repeat(6, 1fr); align-content: center; gap: 4% 0; padding: 4% 6%; }
-.drawer button { background: none; border: 0; color: var(--ink); font: inherit; font-size: clamp(9px, 1.25vw, 14px); display: grid; justify-items: center; gap: .5em; cursor: pointer; }
-.drawer .ic { width: clamp(28px, 5.5vw, 64px); aspect-ratio: 1; border-radius: 22%; }
-.drawer button:focus-visible .ic { outline: 2px solid var(--ink); outline-offset: 3px; }
+/* App drawer: same numbers as DrawerView.java, in design px times --s (screen width / 2000) */
+.screen { --s: .5; }
+.drawer { position: absolute; inset: 0; overflow: hidden; color: #fff; font-family: Roboto, system-ui, sans-serif; opacity: 0; transition: opacity .22s ease; }
+.drawer.open { opacity: 1; }
+.drawer .dbg { position: absolute; inset: calc(var(--s) * -80px); background: url("wallpaper.jpg") center / cover; filter: blur(calc(var(--s) * 34px)) saturate(1.1); }
+.drawer .dtint { position: absolute; inset: 0; background:
+  linear-gradient(180deg, rgba(0,0,0,.35) 0, rgba(0,0,0,0) calc(var(--s) * 320px)),
+  linear-gradient(0deg, rgba(0,0,0,.3) 0, rgba(0,0,0,0) calc(var(--s) * 260px)),
+  rgba(18,3,10,.42); }
+.drawer .dhead { position: absolute; left: calc(var(--s) * 130px); right: calc(var(--s) * 130px); top: calc(var(--s) * 70px); display: flex; justify-content: space-between; align-items: flex-start; transform: translateY(calc(var(--s) * -20px)); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.drawer.open .dhead { transform: none; }
+.drawer .dtitle { font-weight: 500; font-size: calc(var(--s) * 64px); line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.drawer .dcount { font-size: calc(var(--s) * 27px); letter-spacing: .08em; color: rgba(255,255,255,.7); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.drawer .dclose { width: calc(var(--s) * 88px); height: calc(var(--s) * 88px); margin-top: calc(var(--s) * 14px); border-radius: 50%; border: calc(var(--s) * 2px) solid rgba(255,255,255,.3); background: rgba(255,255,255,.15); cursor: pointer; position: relative; transition: transform .1s; }
+.drawer .dclose::before, .drawer .dclose::after { content: ""; position: absolute; left: 50%; top: 50%; width: 36%; height: calc(var(--s) * 5px); border-radius: 9px; background: #fff; transform: translate(-50%, -50%) rotate(45deg); }
+.drawer .dclose::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.drawer .dclose:active { transform: scale(.9); }
+.drawer .dline { position: absolute; left: calc(var(--s) * 130px); right: calc(var(--s) * 130px); top: calc(var(--s) * 234px); height: max(1px, calc(var(--s) * 1.5px)); background: rgba(255,255,255,.15); }
+.drawer .dgrid { position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--s) * 240px); overflow-y: auto; scrollbar-width: none;
+  display: grid; grid-template-columns: repeat(6, 1fr); column-gap: calc(var(--s) * 24px); row-gap: calc(var(--s) * 46px); align-content: start;
+  padding: calc(var(--s) * 26px) calc(var(--s) * 130px) calc(var(--s) * 90px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 calc(var(--s) * 90px), #000 calc(100% - var(--s) * 90px), transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0, #000 calc(var(--s) * 90px), #000 calc(100% - var(--s) * 90px), transparent 100%);
+  transform: translateY(calc(var(--s) * 70px)); opacity: 0; transition: transform .34s cubic-bezier(.2,.8,.2,1) .04s, opacity .34s ease .04s; }
+.drawer .dgrid::-webkit-scrollbar { display: none; }
+.drawer.open .dgrid { transform: none; opacity: 1; }
+.drawer .cell { background: none; border: 0; padding: 0; color: #fff; font: inherit; cursor: pointer; display: grid; justify-items: center; row-gap: calc(var(--s) * 18px); min-width: 0; }
+.drawer .plate { width: calc(var(--s) * 176px); height: calc(var(--s) * 176px); border-radius: calc(var(--s) * 40px); display: grid; place-items: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 60%), rgba(255,255,255,.15);
+  border: max(1px, calc(var(--s) * 2px)) solid rgba(255,255,255,.3); box-shadow: calc(var(--s) * 3px) calc(var(--s) * 8px) calc(var(--s) * 10px) rgba(0,0,0,.2); transition: transform .11s; }
+.drawer .cell:active .plate { transform: scale(.92); }
+.drawer .cell:focus-visible { outline: none; }
+.drawer .cell:focus-visible .plate { outline: 2px solid #fff; outline-offset: 3px; }
+.drawer .ic { width: calc(var(--s) * 116px); height: calc(var(--s) * 116px); border-radius: 24%; display: grid; place-items: center; font-weight: 700; font-size: calc(var(--s) * 52px); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.drawer .lbl { font-size: calc(var(--s) * 28px); line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+@media (prefers-reduced-motion: reduce) { .drawer, .drawer .dgrid, .drawer .dhead { transition: none; } }
 .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 28px; font-size: .9rem; line-height: 1.45; }
 .legend div { min-width: 0; }
 .legend b { display: block; font-family: var(--display); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; font-size: .75rem; color: var(--signal); margin-bottom: 2px; }
@@ -121,7 +153,9 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var FAKE_APPS = [["Car Link 2.0", "#2fbf95"], ["Front Video", "#33a8e0"], ["Equalizer", "#8f5ce9"], ["Music Player", "#e04a86"], ["YouTube", "#d93a3a"],
     ["Maps", "#3c9a5a"], ["Bluetooth", "#2f6fe0"], ["Radio", "#e08a2f"], ["Settings", "#6b6f78"], ["Spotify", "#1db954"],
     ["Waze", "#33ccff"], ["Files", "#5a7ab8"], ["Gallery", "#c94f9a"], ["Chrome", "#4f8ff0"], ["Weather", "#e0b12f"],
-    ["Steering Wheel", "#a5584e"], ["Calculator", "#5a5a64"], ["UI33 Launcher", "#7a6a70"]];
+    ["Steering Wheel", "#a5584e"], ["Calculator", "#5a5a64"], ["UI33 Launcher", "#7a6a70"],
+    ["Phone", "#2fa86a"], ["Contacts", "#e0703a"], ["Messages", "#3a7be0"], ["Clock", "#4a4f8a"], ["Video Player", "#c0392b"],
+    ["File Manager", "#d9a227"], ["AUX In", "#6c5ce7"], ["DVR", "#2d8f8f"], ["Play Store", "#1e9e5a"]];
   var choices = {};
 
   // ---- demo song state
@@ -438,19 +472,46 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
       { label: "Choose a different home app", run: function () { toast("Opens Home app settings, where you can pick UI33 again"); } }
     ]);
   }
+  // ---- app drawer
+  var screenEl = document.getElementById("screen");
+  function setScale() { screenEl.style.setProperty("--s", String(screenEl.clientWidth / 2000)); }
+  setScale();
+  if (window.ResizeObserver) new ResizeObserver(setScale).observe(screenEl); else window.addEventListener("resize", setScale);
+
+  function closeDrawer() {
+    drawer.classList.remove("open");
+    setTimeout(function () { if (!drawer.classList.contains("open")) drawer.hidden = true; }, 230);
+  }
   function openDrawer() {
     drawer.innerHTML = "";
+    drawer.appendChild(Object.assign(document.createElement("div"), { className: "dbg" }));
+    drawer.appendChild(Object.assign(document.createElement("div"), { className: "dtint" }));
+    var head = document.createElement("div"); head.className = "dhead";
+    var t = document.createElement("div");
+    t.appendChild(Object.assign(document.createElement("div"), { className: "dtitle", textContent: "Apps" }));
+    t.appendChild(Object.assign(document.createElement("div"), { className: "dcount", textContent: FAKE_APPS.length + " APPS" }));
+    var x = Object.assign(document.createElement("button"), { className: "dclose", type: "button" });
+    x.setAttribute("aria-label", "Close apps");
+    x.addEventListener("click", closeDrawer);
+    head.appendChild(t); head.appendChild(x); drawer.appendChild(head);
+    drawer.appendChild(Object.assign(document.createElement("div"), { className: "dline" }));
+    var grid = document.createElement("div"); grid.className = "dgrid";
     FAKE_APPS.forEach(function (a) {
-      var b = document.createElement("button"); b.type = "button";
-      var ic = document.createElement("span"); ic.className = "ic"; ic.style.background = "linear-gradient(160deg," + a[1] + ", #00000055)";
-      var t = document.createElement("span"); t.textContent = a[0];
-      b.appendChild(ic); b.appendChild(t);
-      b.addEventListener("click", function (e) { e.stopPropagation(); drawer.hidden = true; toast("Opening " + a[0] + "…"); });
-      drawer.appendChild(b);
+      var b = Object.assign(document.createElement("button"), { className: "cell", type: "button" });
+      var plate = Object.assign(document.createElement("span"), { className: "plate" });
+      var ic = Object.assign(document.createElement("span"), { className: "ic", textContent: a[0].charAt(0) });
+      ic.style.background = "linear-gradient(160deg," + a[1] + ", " + a[1] + "99)";
+      plate.appendChild(ic); b.appendChild(plate);
+      b.appendChild(Object.assign(document.createElement("span"), { className: "lbl", textContent: a[0] }));
+      b.addEventListener("click", function () { toast("Opening " + a[0] + "…"); closeDrawer(); });
+      grid.appendChild(b);
     });
+    drawer.appendChild(grid);
     drawer.hidden = false;
+    void drawer.offsetWidth; // let the closed state paint before animating open
+    drawer.classList.add("open");
+    x.focus({ preventScroll: true });
   }
-  drawer.addEventListener("click", function () { drawer.hidden = true; });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { sheet.hidden = true; drawer.hidden = true; } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { sheet.hidden = true; if (!drawer.hidden) closeDrawer(); } });
 })();
 </script>
