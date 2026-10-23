@@ -60,7 +60,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 .screen { --s: .5; }
 .drawer { position: absolute; inset: 0; overflow: hidden; color: #fff; font-family: Roboto, system-ui, sans-serif; opacity: 0; transition: opacity .22s ease; }
 .drawer.open { opacity: 1; }
-.drawer .dbg { position: absolute; inset: calc(var(--s) * -80px); background: url("wallpaper.jpg") center / cover; filter: blur(calc(var(--s) * 34px)) saturate(1.1); }
+.drawer .dbg { position: absolute; inset: calc(var(--s) * -80px); background: var(--wall, url("wallpaper.jpg")) center / cover; filter: blur(calc(var(--s) * 34px)) saturate(1.1); }
 .drawer .dtint { position: absolute; inset: 0; background:
   linear-gradient(180deg, rgba(0,0,0,.35) 0, rgba(0,0,0,0) calc(var(--s) * 320px)),
   linear-gradient(0deg, rgba(0,0,0,.3) 0, rgba(0,0,0,0) calc(var(--s) * 260px)),
@@ -166,7 +166,14 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     var sx = s.getContext("2d"); sx.filter = "blur(2.5px)"; sx.drawImage(wall, 0, 0, s.width, s.height);
     blur = s; draw();
   };
-  wall.src = "wallpaper.jpg";
+  // Car colours, same order as MainActivity.CAR_COLORS
+  var CAR_COLORS = [["Blue", "wallpaper.jpg", "#1f2f6b"], ["Red", "wallpaper_red.jpg", "#a3161d"]], carColor = 0;
+  function setCarColor(i) {
+    carColor = i;
+    wall.src = CAR_COLORS[i][1];
+    document.getElementById("screen").style.setProperty("--wall", 'url("' + CAR_COLORS[i][1] + '")');
+  }
+  wall.src = CAR_COLORS[0][1];
 
   var pressed = null, seeking = false, seekFrac = 0;
 
@@ -457,8 +464,14 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     items.unshift({ label: "Automatic (match by name)", run: function () { delete choices[id]; toast(slotTitle(id) + " set to automatic"); } });
     openSheet("Choose app for the " + slotTitle(id), items);
   }
+  function pickCarColor() {
+    openSheet("Change car color", CAR_COLORS.map(function (c, i) {
+      return { label: c[0] + (i === carColor ? "  ✓" : ""), color: c[2], run: function () { setCarColor(i); toast("Car color: " + c[0]); } };
+    }));
+  }
   function bgMenu() {
     openSheet("Redline Launcher", [
+      { label: "Change car color", run: pickCarColor },
       { label: "Change wallpaper", run: function () { toast("Opens your gallery to pick a wallpaper"); } },
       { label: "Use the default wallpaper", run: function () { toast("Wallpaper reset"); } },
       { label: "Show song info (music access)", run: function () { toast("Opens notification access settings"); } },

@@ -247,29 +247,30 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     }
 
     @Override public void onBackgroundLongPress() {
-        String[] items = {"Change wallpaper", "Use the default wallpaper", "Show song info (music access)",
+        String[] items = {"Change car color", "Change wallpaper", "Use the default wallpaper", "Show song info (music access)",
                 "Android settings", "Choose a different home app", "Make this my home screen"};
         new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
                 .setTitle("Redline Launcher")
                 .setItems(items, new DialogInterface.OnClickListener() {
                     @Override public void onClick(DialogInterface d, int which) {
                         switch (which) {
-                            case 0: pickWallpaper(); break;
-                            case 1:
+                            case 0: pickCarColor(); break;
+                            case 1: pickWallpaper(); break;
+                            case 2:
                                 new File(getFilesDir(), "wallpaper.jpg").delete();
                                 applyWallpaper(loadWallpaper());
                                 break;
-                            case 2: media.openAccessSettings(); break;
-                            case 3:
+                            case 3: media.openAccessSettings(); break;
+                            case 4:
                                 Slots.start(MainActivity.this, new Intent(Settings.ACTION_SETTINGS)
                                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                                 break;
-                            case 4:
+                            case 5:
                                 Intent hi = new Intent(Settings.ACTION_HOME_SETTINGS);
                                 if (!Slots.start(MainActivity.this, hi))
                                     Slots.start(MainActivity.this, new Intent(Settings.ACTION_SETTINGS));
                                 break;
-                            case 5:
+                            case 6:
                                 getSharedPreferences("app", MODE_PRIVATE).edit().remove("neverAskHome").apply();
                                 if (isDefaultHome()) Toast.makeText(MainActivity.this,
                                         "Redline Launcher is already your home screen", Toast.LENGTH_SHORT).show();
@@ -335,6 +336,32 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
         return b;
     }
 
+    // ------------------------------------------------------------------ car colour
+
+    static final String[] CAR_COLORS = {"Blue", "Red"};
+    static final int[] CAR_WALLPAPERS = {R.drawable.default_wallpaper, R.drawable.wallpaper_red};
+
+    private int carColor() {
+        int i = getSharedPreferences("app", MODE_PRIVATE).getInt("carColor", 0);
+        return i >= 0 && i < CAR_COLORS.length ? i : 0;
+    }
+
+    /** Ask which colour car to show, then switch to that version of the wallpaper. */
+    private void pickCarColor() {
+        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle("Change car color")
+                .setSingleChoiceItems(CAR_COLORS, carColor(), new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        getSharedPreferences("app", MODE_PRIVATE).edit().putInt("carColor", which).apply();
+                        new File(getFilesDir(), "wallpaper.jpg").delete(); // a picked photo would hide the car
+                        applyWallpaper(loadWallpaper());
+                        d.dismiss();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private Bitmap loadWallpaper() {
         File f = new File(getFilesDir(), "wallpaper.jpg");
         BitmapFactory.Options o = new BitmapFactory.Options();
@@ -343,6 +370,6 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
             Bitmap b = BitmapFactory.decodeFile(f.getAbsolutePath(), o);
             if (b != null) return b;
         }
-        return BitmapFactory.decodeResource(getResources(), R.drawable.default_wallpaper, o);
+        return BitmapFactory.decodeResource(getResources(), CAR_WALLPAPERS[carColor()], o);
     }
 }
