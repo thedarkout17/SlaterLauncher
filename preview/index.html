@@ -210,18 +210,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     ctx.restore(); noShadow();
   }
 
-  // Simulated drive for the demo: stopped, pull away, cruise, slow down, stop. Loops every 48 s.
-  var driveStart = performance.now();
-  function demoMph() {
-    var t = ((performance.now() - driveStart) / 1000) % 48;
-    var v;
-    if (t < 4) v = 0;
-    else if (t < 14) v = 45 * (1 - Math.pow(1 - (t - 4) / 10, 2));
-    else if (t < 36) v = 52 + 9 * Math.sin((t - 14) / 3.2) + 3 * Math.sin((t - 14) * 1.7);
-    else if (t < 44) v = (52 + 9 * Math.sin(22 / 3.2) + 3 * Math.sin(22 * 1.7)) * (1 - (t - 36) / 8);
-    else v = 0;
-    return Math.max(0, Math.round(v));
-  }
+  // The demo shows a steady 0 mph; the head unit shows live GPS speed.
+  function demoMph() { return 0; }
 
   function speedReadout() {
     ctx.save(); pressScale("speed", MOON_CX, MOON_CY);
@@ -401,7 +391,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     if (id.indexOf("tile") === 0 || id.indexOf("side") === 0) toast("Opening " + nameFor(id) + "…");
     else if (id === "apps") { if (appsSpinStart >= 0) return; appsSpinStart = performance.now(); setTimeout(openDrawer, APPS_OPEN_DELAY_MS); }
     else if (id === "clock") toast("Opening Clock…");
-    else if (id === "speed") toast("On the head unit this is your GPS speed. The demo simulates a drive.");
+    else if (id === "speed") toast("On the head unit this shows your live GPS speed.");
     else if (id === "play") { song.playing = !song.playing; song.last = performance.now(); }
     else if (id === "next") nextSong();
     else if (id === "prev") { if (song.pos > 3000) song.pos = 0; else { songIdx = (songIdx + songs.length - 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; } song.last = performance.now(); }
