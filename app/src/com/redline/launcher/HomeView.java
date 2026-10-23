@@ -277,6 +277,7 @@ public class HomeView extends View {
         p.setColor(GLASS_TINT);
         c.drawRect(r, p);
         if (tint != 0) { p.setColor(tint); c.drawRect(r, p); }
+        p.setColor(Color.WHITE); // opaque, so the gradient's own colours decide the look
         p.setShader(new LinearGradient(0, r.top, 0, r.top + Math.min(220, r.height()),
                 GLASS_SHEEN, 0x00FFFFFF, Shader.TileMode.CLAMP));
         c.drawRect(r, p);
@@ -539,6 +540,7 @@ public class HomeView extends View {
     }
 
     private void drawPlaceholderArt(Canvas c) {
+        p.setColor(Color.WHITE); // opaque, so the gradient isn't faded by the shadow colour
         p.setShader(new LinearGradient(ART.left, ART.top, ART.right, ART.bottom,
                 new int[]{0xFF9FF0F0, 0xFFE6E0FA, 0xFFF4C8EE}, null, Shader.TileMode.CLAMP));
         c.drawRoundRect(ART, 14, 14, p);
@@ -596,6 +598,7 @@ public class HomeView extends View {
         p.setColor(0x55000000);
         tmp.set(r.left + 2, r.top + 10, r.right + 2, r.bottom + 12);
         c.drawRoundRect(tmp, 36, 36, p);
+        p.setColor(Color.WHITE); // opaque: the shadow above left the paint at 33% alpha, which faded the tiles
         p.setShader(new LinearGradient(0, r.top, 0, r.bottom, TILE_COLORS[i][0], TILE_COLORS[i][1], Shader.TileMode.CLAMP));
         c.drawRoundRect(r, 36, 36, p);
         p.setShader(new RadialGradient(cx - 30, r.top + 20, TILE_SIZE * 0.8f, 0x40FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
@@ -623,19 +626,18 @@ public class HomeView extends View {
                 }
                 break;
             }
-            case 1: { // front video: camera
+            case 1: { // front video: flat camera, no raised top
                 white(0);
-                tmp.set(cx - 50, cy - 30, cx + 50, cy + 40);
-                c.drawRoundRect(tmp, 12, 12, p);
-                tmp.set(cx - 20, cy - 44, cx + 20, cy - 24);
-                c.drawRoundRect(tmp, 6, 6, p);
+                tmp.set(cx - 52, cy - 36, cx + 52, cy + 38);
+                c.drawRoundRect(tmp, 16, 16, p);
                 p.clearShadowLayer();
                 p.setColor(TILE_COLORS[1][1]);
-                c.drawCircle(cx, cy + 5, 22, p);
+                c.drawCircle(cx, cy + 1, 24, p);
+                c.drawCircle(cx + 35, cy - 21, 5, p);   // flash
                 p.setColor(Color.WHITE);
-                c.drawCircle(cx, cy + 5, 12, p);
+                c.drawCircle(cx, cy + 1, 13, p);
                 p.setColor(TILE_COLORS[1][1]);
-                c.drawCircle(cx, cy + 5, 6, p);
+                c.drawCircle(cx, cy + 1, 6, p);
                 break;
             }
             case 2: { // equalizer
