@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
@@ -33,7 +32,7 @@ import java.util.List;
 
 /**
  * Full-screen app drawer shown over the home screen: a heavily frosted copy of the
- * wallpaper, a header with the app count and a close button, and a scrolling grid of
+ * wallpaper, a header with the app count, and a scrolling grid of
  * app icons sitting on glass plates. Sizes are on the same 2000 x 1200 design grid as
  * HomeView and scale to the real screen.
  */
@@ -50,10 +49,9 @@ public class DrawerView extends FrameLayout {
     static final float SIDE_PAD = 130, TOP_PAD = 70, HEADER_H = 190;
     static final float ICON = 160;          // app icons sit straight on the frosted background, no plate
     static final float LABEL_SIZE = 28, LABEL_GAP = 18, ROW_GAP = 46;
-    static final float TITLE_SIZE = 64, COUNT_SIZE = 27, CLOSE_SIZE = 88;
+    static final float TITLE_SIZE = 64, COUNT_SIZE = 27;
     static final int BLUR_DOWNSCALE = 18;      // bigger = blurrier background
     static final int TINT = 0x6B12030A;        // dark wash over the blurred wallpaper
-    static final int PLATE_FILL = 0x26FFFFFF, PLATE_EDGE = 0x4DFFFFFF; // used by the close button
 
     private final Callback cb;
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -62,7 +60,6 @@ public class DrawerView extends FrameLayout {
 
     private final LinearLayout titles;
     private final TextView title, count;
-    private final CloseButton close;
     private final GridView grid;
     private final AppAdapter adapter = new AppAdapter();
     private List<Slots.AppEntry> apps = new ArrayList<Slots.AppEntry>();
@@ -89,12 +86,6 @@ public class DrawerView extends FrameLayout {
         titles.addView(count);
         addView(titles);
 
-        close = new CloseButton(c);
-        close.setContentDescription("Close apps");
-        close.setOnClickListener(new OnClickListener() {
-            @Override public void onClick(View v) { DrawerView.this.cb.onClose(); }
-        });
-        addView(close);
 
         grid = new GridView(c);
         grid.setNumColumns(COLUMNS);
@@ -187,10 +178,6 @@ public class DrawerView extends FrameLayout {
         tl.topMargin = top;
         titles.setLayoutParams(tl);
 
-        LayoutParams cl = new LayoutParams(px(CLOSE_SIZE), px(CLOSE_SIZE), Gravity.TOP | Gravity.END);
-        cl.rightMargin = side;
-        cl.topMargin = top + px(14);
-        close.setLayoutParams(cl);
 
         LayoutParams gl = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         gl.topMargin = Math.round(offY) + px(HEADER_H + TOP_PAD - 20);
@@ -310,35 +297,6 @@ public class DrawerView extends FrameLayout {
             tp.setTextSize(LABEL_SIZE * s);
             String text = TextUtils.ellipsize(label, tp, w - 16 * s, TextUtils.TruncateAt.END).toString();
             c.drawText(text, w / 2f, size + LABEL_GAP * s + LABEL_SIZE * s * 0.95f, tp);
-        }
-    }
-
-    /** Round glass button with an X. */
-    private class CloseButton extends View {
-        private final Paint bp = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        CloseButton(Context c) { super(c); setClickable(true); }
-
-        @Override public void setPressed(boolean pressed) {
-            super.setPressed(pressed);
-            animate().scaleX(pressed ? 0.9f : 1f).scaleY(pressed ? 0.9f : 1f).setDuration(100).start();
-        }
-
-        @Override protected void onDraw(Canvas c) {
-            float w = getWidth(), cx = w / 2f, cy = getHeight() / 2f, r = w / 2f - 2 * s;
-            bp.setStyle(Paint.Style.FILL);
-            bp.setColor(PLATE_FILL);
-            c.drawCircle(cx, cy, r, bp);
-            bp.setStyle(Paint.Style.STROKE);
-            bp.setStrokeWidth(Math.max(1f, 2f * s));
-            bp.setColor(PLATE_EDGE);
-            c.drawCircle(cx, cy, r, bp);
-            bp.setColor(Color.WHITE);
-            bp.setStrokeWidth(5f * s);
-            bp.setStrokeCap(Paint.Cap.ROUND);
-            float k = r * 0.36f;
-            c.drawLine(cx - k, cy - k, cx + k, cy + k, bp);
-            c.drawLine(cx + k, cy - k, cx - k, cy + k, bp);
         }
     }
 }

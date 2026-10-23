@@ -69,10 +69,6 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 .drawer.open .dhead { transform: none; }
 .drawer .dtitle { font-weight: 500; font-size: calc(var(--s) * 64px); line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
 .drawer .dcount { font-size: calc(var(--s) * 27px); letter-spacing: .08em; color: rgba(255,255,255,.7); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
-.drawer .dclose { width: calc(var(--s) * 88px); height: calc(var(--s) * 88px); margin-top: calc(var(--s) * 14px); border-radius: 50%; border: calc(var(--s) * 2px) solid rgba(255,255,255,.3); background: rgba(255,255,255,.15); cursor: pointer; position: relative; transition: transform .1s; }
-.drawer .dclose::before, .drawer .dclose::after { content: ""; position: absolute; left: 50%; top: 50%; width: 36%; height: calc(var(--s) * 5px); border-radius: 9px; background: #fff; transform: translate(-50%, -50%) rotate(45deg); }
-.drawer .dclose::after { transform: translate(-50%, -50%) rotate(-45deg); }
-.drawer .dclose:active { transform: scale(.9); }
 .drawer .dline { position: absolute; left: calc(var(--s) * 130px); right: calc(var(--s) * 130px); top: calc(var(--s) * 234px); height: max(1px, calc(var(--s) * 1.5px)); background: rgba(255,255,255,.15); }
 .drawer .dgrid { position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--s) * 240px); overflow-y: auto; scrollbar-width: none;
   display: grid; grid-template-columns: repeat(6, 1fr); column-gap: calc(var(--s) * 24px); row-gap: calc(var(--s) * 46px); align-content: start;
@@ -497,10 +493,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     var t = document.createElement("div");
     t.appendChild(Object.assign(document.createElement("div"), { className: "dtitle", textContent: "Apps" }));
     t.appendChild(Object.assign(document.createElement("div"), { className: "dcount", textContent: FAKE_APPS.length + " APPS" }));
-    var x = Object.assign(document.createElement("button"), { className: "dclose", type: "button" });
-    x.setAttribute("aria-label", "Close apps");
-    x.addEventListener("click", closeDrawer);
-    head.appendChild(t); head.appendChild(x); drawer.appendChild(head);
+    head.appendChild(t); drawer.appendChild(head);
     drawer.appendChild(Object.assign(document.createElement("div"), { className: "dline" }));
     var grid = document.createElement("div"); grid.className = "dgrid";
     FAKE_APPS.forEach(function (a) {
@@ -513,11 +506,13 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
       b.addEventListener("click", function () { toast("Opening " + a[0] + "…"); closeDrawer(); });
       grid.appendChild(b);
     });
+    // On the head unit the system Back arrow closes this page; in the demo, tap any empty space or press Esc.
+    drawer.addEventListener("click", function (e) { if (!e.target.closest(".cell")) closeDrawer(); });
     drawer.appendChild(grid);
     drawer.hidden = false;
     void drawer.offsetWidth; // let the closed state paint before animating open
     drawer.classList.add("open");
-    x.focus({ preventScroll: true });
+    grid.tabIndex = -1; grid.focus({ preventScroll: true });
   }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") { sheet.hidden = true; if (!drawer.hidden) closeDrawer(); } });
 })();
