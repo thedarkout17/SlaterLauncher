@@ -48,12 +48,12 @@ public class DrawerView extends FrameLayout {
     // ---- look (design px on the 2000 x 1200 grid)
     static final int COLUMNS = 6;
     static final float SIDE_PAD = 130, TOP_PAD = 70, HEADER_H = 190;
-    static final float PLATE = 176, ICON = 116, PLATE_RADIUS = 40;
+    static final float ICON = 160;          // app icons sit straight on the frosted background, no plate
     static final float LABEL_SIZE = 28, LABEL_GAP = 18, ROW_GAP = 46;
     static final float TITLE_SIZE = 64, COUNT_SIZE = 27, CLOSE_SIZE = 88;
     static final int BLUR_DOWNSCALE = 18;      // bigger = blurrier background
     static final int TINT = 0x6B12030A;        // dark wash over the blurred wallpaper
-    static final int PLATE_FILL = 0x26FFFFFF, PLATE_EDGE = 0x4DFFFFFF, PLATE_SHEEN = 0x29FFFFFF;
+    static final int PLATE_FILL = 0x26FFFFFF, PLATE_EDGE = 0x4DFFFFFF; // used by the close button
 
     private final Callback cb;
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -264,11 +264,9 @@ public class DrawerView extends FrameLayout {
         }
     }
 
-    /** One app: a frosted glass plate with the app's own icon, and its name underneath. */
+    /** One app: its own icon, large, with its name underneath. */
     private class AppCell extends View {
-        private final Paint cp = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final TextPaint tp = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        private final RectF plate = new RectF();
         private String label = "";
         private Drawable icon;
 
@@ -288,7 +286,7 @@ public class DrawerView extends FrameLayout {
 
         @Override protected void onMeasure(int wSpec, int hSpec) {
             int w = MeasureSpec.getSize(wSpec);
-            int h = Math.round((PLATE + LABEL_GAP + LABEL_SIZE * 1.5f) * s);
+            int h = Math.round((ICON + LABEL_GAP + LABEL_SIZE * 1.5f) * s);
             setMeasuredDimension(w, h);
         }
 
@@ -298,30 +296,14 @@ public class DrawerView extends FrameLayout {
         }
 
         @Override protected void onDraw(Canvas c) {
-            float w = getWidth(), size = PLATE * s, r = PLATE_RADIUS * s;
-            plate.set((w - size) / 2f, 0, (w + size) / 2f, size);
+            float w = getWidth(), size = ICON * s;
             setPivotX(w / 2f);
             setPivotY(size / 2f);
 
-            cp.setShader(null);
-            cp.setStyle(Paint.Style.FILL);
-            cp.setColor(0x33000000);                                   // soft drop shadow
-            c.drawRoundRect(plate.left + 3 * s, plate.top + 8 * s, plate.right + 3 * s, plate.bottom + 10 * s, r, r, cp);
-            cp.setColor(PLATE_FILL);                                   // frosted fill
-            c.drawRoundRect(plate, r, r, cp);
-            cp.setColor(Color.WHITE);                                  // top sheen (opaque paint, gradient sets alpha)
-            cp.setShader(new LinearGradient(0, plate.top, 0, plate.top + size * 0.6f, PLATE_SHEEN, 0x00FFFFFF, Shader.TileMode.CLAMP));
-            c.drawRoundRect(plate, r, r, cp);
-            cp.setShader(null);
-            cp.setStyle(Paint.Style.STROKE);                           // bright edge
-            cp.setStrokeWidth(Math.max(1f, 2f * s));
-            cp.setColor(PLATE_EDGE);
-            c.drawRoundRect(plate, r, r, cp);
-
             if (icon != null) {
-                int is = Math.round(ICON * s);
-                int l = Math.round(plate.centerX() - is / 2f), t = Math.round(plate.centerY() - is / 2f);
-                icon.setBounds(l, t, l + is, t + is);
+                int is = Math.round(size);
+                int l = Math.round((w - is) / 2f);
+                icon.setBounds(l, 0, l + is, is);
                 icon.draw(c);
             }
 
