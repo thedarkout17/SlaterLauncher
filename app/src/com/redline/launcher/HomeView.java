@@ -45,12 +45,12 @@ public class HomeView extends View {
     static final float DW = 2000f, DH = 1200f;
 
     // ---- layout (design pixels) ------------------------------------------------
-    static final RectF SIDEBAR = new RectF(-60, 230, 215, 890);
-    static final RectF APPS = new RectF(-60, 900, 215, 1105);
-    // Beveled outlines (design px): angled corners on the right, every bend rounded by BEVEL_RADIUS.
+    static final RectF SIDEBAR = new RectF(-60, 198, 215, 905);
+    static final RectF APPS = new RectF(-60, 880, 215, 1105);
+    // Beveled outlines (design px): top/bottom edges slant all the way to the screen edge, every bend rounded by BEVEL_RADIUS.
     // The left edge sits off-screen so only the right side shows.
-    static final float[] SIDEBAR_SHAPE = {-60, 228, 168, 228, 215, 305, 215, 835, 172, 890, -60, 890};
-    static final float[] APPS_SHAPE = {-60, 902, 168, 902, 215, 972, 215, 1105, -60, 1105};
+    static final float[] SIDEBAR_SHAPE = {-60, 198, 215, 290, 215, 850, -60, 905};
+    static final float[] APPS_SHAPE = {-60, 935, 215, 880, 215, 1105, -60, 1105};
     static final float BEVEL_RADIUS = 16f;
     static final RectF CLOCK = new RectF(290, 188, 780, 435);
     static final RectF MUSIC = new RectF(290, 455, 780, 1105);
