@@ -101,6 +101,10 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 
   // ---- layout, copied from HomeView.java
   var SIDEBAR = [-60, 230, 215, 890], APPS = [-60, 900, 215, 1105], CLOCK = [290, 188, 780, 435], MUSIC = [290, 455, 780, 1105], ART = [428, 512, 643, 722];
+  // Beveled outlines: angled right corners, every bend rounded by BEVEL_RADIUS (same as HomeView.java)
+  var SIDEBAR_SHAPE = [-60, 228, 168, 228, 215, 305, 215, 835, 172, 890, -60, 890];
+  var APPS_SHAPE = [-60, 902, 168, 902, 215, 972, 215, 1105, -60, 1105];
+  var BEVEL_RADIUS = 16;
   var SIDE_X = 117, SIDE_Y = [330, 487, 643, 797];
   var SIDE_NAMES = ["Settings", "Front Camera", "Bluetooth", "Maps"];
   var PROG_Y = 917, PROG_X0 = 335, PROG_X1 = 740, CTRL_Y = 1000, CTRL_X = [388, 537, 685];
@@ -133,9 +137,23 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 
   function rr(r, rad) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r[0], r[1], r[2] - r[0], r[3] - r[1], rad) : ctx.rect(r[0], r[1], r[2] - r[0], r[3] - r[1]); }
 
-  function glass(r, rad, tint) {
-    ctx.save(); ctx.fillStyle = "rgba(0,0,0,.2)"; rr([r[0] + 4, r[1] + 8, r[2] + 4, r[3] + 10], rad); ctx.fill(); ctx.restore();
-    ctx.save(); rr(r, rad); ctx.clip();
+  function roundedPolygon(pts, radius) {
+    var n = pts.length / 2; ctx.beginPath();
+    for (var i = 0; i < n; i++) {
+      var pi = (i - 1 + n) % n, ni = (i + 1) % n;
+      var px = pts[pi * 2], py = pts[pi * 2 + 1], cx = pts[i * 2], cy = pts[i * 2 + 1], nx = pts[ni * 2], ny = pts[ni * 2 + 1];
+      var d1 = Math.hypot(cx - px, cy - py), d2 = Math.hypot(nx - cx, ny - cy), r = Math.min(radius, Math.min(d1, d2) / 2);
+      var ax = cx + (px - cx) * r / d1, ay = cy + (py - cy) * r / d1, bx = cx + (nx - cx) * r / d2, by = cy + (ny - cy) * r / d2;
+      if (i === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
+      ctx.quadraticCurveTo(cx, cy, bx, by);
+    }
+    ctx.closePath();
+  }
+
+  // shape(): traces the panel outline as the current path; r: its bounding box
+  function glass(shape, r, tint) {
+    ctx.save(); ctx.translate(4, 8); ctx.fillStyle = "rgba(0,0,0,.2)"; shape(); ctx.fill(); ctx.restore();
+    ctx.save(); shape(); ctx.clip();
     if (blur) { ctx.imageSmoothingQuality = "high"; ctx.globalAlpha = GLASS_BLUR_ALPHA; ctx.drawImage(blur, 0, 0, DW, DH); ctx.globalAlpha = 1; }
     ctx.fillStyle = GLASS_TINT; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
     if (tint) { ctx.fillStyle = tint; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]); }
@@ -143,7 +161,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     g.addColorStop(0, GLASS_SHEEN); g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
     ctx.restore();
-    ctx.save(); rr(r, rad); ctx.lineWidth = 2.2; ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.stroke(); ctx.restore();
+    ctx.save(); shape(); ctx.lineWidth = 2.2; ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.stroke(); ctx.restore();
   }
 
   function white(stroke) {
@@ -273,7 +291,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (wall.complete && wall.naturalWidth) ctx.drawImage(wall, 0, 0, DW, DH); else { ctx.fillStyle = "#2a0508"; ctx.fillRect(0, 0, DW, DH); }
-    glass(SIDEBAR, 34); glass(APPS, 34, APPS_TINT); glass(CLOCK, 26); glass(MUSIC, 26);
+    glass(function () { roundedPolygon(SIDEBAR_SHAPE, BEVEL_RADIUS); }, SIDEBAR); glass(function () { roundedPolygon(APPS_SHAPE, BEVEL_RADIUS); }, APPS, APPS_TINT);
+    glass(function () { rr(CLOCK, 26); }, CLOCK); glass(function () { rr(MUSIC, 26); }, MUSIC);
     sidebar(); appsButton(); clock(); music();
     for (var i = 0; i < 5; i++) tile(i);
   }

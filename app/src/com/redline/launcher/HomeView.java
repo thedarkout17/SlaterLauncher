@@ -47,6 +47,11 @@ public class HomeView extends View {
     // ---- layout (design pixels) ------------------------------------------------
     static final RectF SIDEBAR = new RectF(-60, 230, 215, 890);
     static final RectF APPS = new RectF(-60, 900, 215, 1105);
+    // Beveled outlines (design px): angled corners on the right, every bend rounded by BEVEL_RADIUS.
+    // The left edge sits off-screen so only the right side shows.
+    static final float[] SIDEBAR_SHAPE = {-60, 228, 168, 228, 215, 305, 215, 835, 172, 890, -60, 890};
+    static final float[] APPS_SHAPE = {-60, 902, 168, 902, 215, 972, 215, 1105, -60, 1105};
+    static final float BEVEL_RADIUS = 16f;
     static final RectF CLOCK = new RectF(290, 188, 780, 435);
     static final RectF MUSIC = new RectF(290, 455, 780, 1105);
     static final RectF ART = new RectF(428, 512, 643, 722);
@@ -192,10 +197,10 @@ public class HomeView extends View {
         c.translate(offX, offY);
         c.scale(scale, scale);
 
-        glass(c, SIDEBAR, 34, 0);
-        glass(c, APPS, 34, APPS_TINT);
-        glass(c, CLOCK, 26, 0);
-        glass(c, MUSIC, 26, 0);
+        glass(c, roundedPolygon(SIDEBAR_SHAPE, BEVEL_RADIUS), SIDEBAR, 0);
+        glass(c, roundedPolygon(APPS_SHAPE, BEVEL_RADIUS), APPS, APPS_TINT);
+        glass(c, roundRect(CLOCK, 26), CLOCK, 0);
+        glass(c, roundRect(MUSIC, 26), MUSIC, 0);
 
         drawSidebar(c);
         drawAppsButton(c);
@@ -206,19 +211,44 @@ public class HomeView extends View {
         c.restore();
     }
 
+    private static Path roundRect(RectF r, float radius) {
+        Path out = new Path();
+        out.addRoundRect(r, radius, radius, Path.Direction.CW);
+        return out;
+    }
+
+    /** Polygon (x,y pairs) whose corners are smoothed with curves of the given radius. */
+    static Path roundedPolygon(float[] pts, float radius) {
+        Path out = new Path();
+        int n = pts.length / 2;
+        for (int i = 0; i < n; i++) {
+            float px = pts[((i - 1 + n) % n) * 2], py = pts[((i - 1 + n) % n) * 2 + 1];
+            float cx = pts[i * 2], cy = pts[i * 2 + 1];
+            float nx = pts[((i + 1) % n) * 2], ny = pts[((i + 1) % n) * 2 + 1];
+            float d1 = (float) Math.hypot(cx - px, cy - py), d2 = (float) Math.hypot(nx - cx, ny - cy);
+            float r = Math.min(radius, Math.min(d1, d2) / 2f);
+            float ax = cx + (px - cx) * r / d1, ay = cy + (py - cy) * r / d1;
+            float bx = cx + (nx - cx) * r / d2, by = cy + (ny - cy) * r / d2;
+            if (i == 0) out.moveTo(ax, ay); else out.lineTo(ax, ay);
+            out.quadTo(cx, cy, bx, by);
+        }
+        out.close();
+        return out;
+    }
+
     /** Frosted-glass panel: blurred wallpaper, a light tint, a top sheen and a thin bright edge. */
-    private void glass(Canvas c, RectF r, float radius, int tint) {
-        path.reset();
-        path.addRoundRect(r, radius, radius, Path.Direction.CW);
+    private void glass(Canvas c, Path shape, RectF r, int tint) {
         // soft shadow
         p.setStyle(Paint.Style.FILL);
         p.setShader(null);
         p.setColor(0x33000000);
-        tmp.set(r.left + 4, r.top + 8, r.right + 4, r.bottom + 10);
-        c.drawRoundRect(tmp, radius, radius, p);
+        c.save();
+        c.translate(4, 8);
+        c.drawPath(shape, p);
+        c.restore();
 
         c.save();
-        c.clipPath(path);
+        c.clipPath(shape);
         if (blur != null) {
             tmp.set(-offX / scale, -offY / scale, (getWidth() - offX) / scale, (getHeight() - offY) / scale);
             p.setColor(Color.WHITE);
@@ -238,7 +268,7 @@ public class HomeView extends View {
         p.setStyle(Paint.Style.STROKE);
         p.setStrokeWidth(2.2f);
         p.setColor(0x59FFFFFF);
-        c.drawPath(path, p);
+        c.drawPath(shape, p);
         p.setStyle(Paint.Style.FILL);
     }
 
