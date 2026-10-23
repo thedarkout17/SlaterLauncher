@@ -189,10 +189,21 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     noShadow();
   }
 
+  // four-dot button spin animation (same timing as HomeView.java)
+  var APPS_SPIN_MS = 520, APPS_OPEN_DELAY_MS = 380, appsSpinStart = -1;
   function appsButton() {
-    ctx.save(); pressScale("apps", 115, 997);
-    white(5.5); ctx.beginPath(); ctx.arc(115, 997, 42, 0, 7); ctx.stroke();
-    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) { ctx.beginPath(); ctx.arc(115 + d[0] * 15, 997 + d[1] * 15, 11, 0, 7); ctx.fill(); });
+    var cx = 115, cy = 997, t = -1;
+    if (appsSpinStart >= 0) { t = (performance.now() - appsSpinStart) / APPS_SPIN_MS; if (t >= 1) { t = -1; appsSpinStart = -1; } }
+    var ease = t < 0 ? 0 : 1 - Math.pow(1 - t, 3), bump = t < 0 ? 0 : Math.sin(Math.PI * t);
+    if (t >= 0) {
+      ctx.save(); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,255,255," + (0.78 * (1 - t)) + ")";
+      ctx.beginPath(); ctx.arc(cx, cy, 42 + 46 * ease, 0, 7); ctx.stroke(); ctx.restore();
+    }
+    ctx.save(); pressScale("apps", cx, cy);
+    var k = 1 + 0.08 * bump; ctx.translate(cx, cy); ctx.scale(k, k); ctx.rotate(2 * Math.PI * ease); ctx.translate(-cx, -cy);
+    white(5.5); ctx.beginPath(); ctx.arc(cx, cy, 42, 0, 7); ctx.stroke();
+    var spread = 15 + 6 * bump, dotR = 11 - 2 * bump;
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) { ctx.beginPath(); ctx.arc(cx + d[0] * spread, cy + d[1] * spread, dotR, 0, 7); ctx.fill(); });
     ctx.restore(); noShadow();
   }
 
@@ -349,7 +360,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function nextSong() { songIdx = (songIdx + 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; song.last = performance.now(); }
   function tap(id) {
     if (id.indexOf("tile") === 0 || id.indexOf("side") === 0) toast("Opening " + nameFor(id) + "…");
-    else if (id === "apps") openDrawer();
+    else if (id === "apps") { if (appsSpinStart >= 0) return; appsSpinStart = performance.now(); setTimeout(openDrawer, APPS_OPEN_DELAY_MS); }
     else if (id === "clock") toast("Opening Clock…");
     else if (id === "play") { song.playing = !song.playing; song.last = performance.now(); }
     else if (id === "next") nextSong();

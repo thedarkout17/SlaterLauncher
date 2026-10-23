@@ -92,6 +92,11 @@ public class HomeView extends View {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     // touch state
+    // four-dot button spin animation
+    static final long APPS_SPIN_MS = 520;      // length of the spin
+    static final long APPS_OPEN_DELAY_MS = 380; // when the app grid opens, during the spin
+    private long appsSpinStart = -1;
+
     private String pressed;          // id of the element under the finger
     private float downX, downY;
     private boolean longFired, seeking;
@@ -337,15 +342,38 @@ public class HomeView extends View {
 
     private void drawAppsButton(Canvas c) {
         float cx = 115, cy = 997;
+        // t runs 0 -> 1 over the spin; -1 when idle
+        float t = -1f;
+        if (appsSpinStart >= 0) {
+            t = (android.os.SystemClock.uptimeMillis() - appsSpinStart) / (float) APPS_SPIN_MS;
+            if (t >= 1f) { t = -1f; appsSpinStart = -1; } else postInvalidateOnAnimation();
+        }
+        float ease = t < 0 ? 0f : 1f - (float) Math.pow(1f - t, 3);   // ease-out
+        float bump = t < 0 ? 0f : (float) Math.sin(Math.PI * t);      // 0 -> 1 -> 0
+
+        // ripple ring
+        if (t >= 0) {
+            p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(4f);
+            p.setColor(Color.WHITE);
+            p.setAlpha((int) (200 * (1f - t)));
+            c.drawCircle(cx, cy, 42 + 46 * ease, p);
+            p.setAlpha(255);
+        }
+
         c.save();
-        float s = press("apps");
+        float s = press("apps") * (1f + 0.08f * bump);
         c.scale(s, s, cx, cy);
+        c.rotate(360f * ease, cx, cy);
         white(5.5f);
         c.drawCircle(cx, cy, 42, p);
         white(0);
+        float spread = 15 + 6 * bump;
+        float dotR = 11 - 2 * bump;
         for (int dx = -1; dx <= 1; dx += 2)
             for (int dy = -1; dy <= 1; dy += 2)
-                c.drawCircle(cx + dx * 15, cy + dy * 15, 11, p);
+                c.drawCircle(cx + dx * spread, cy + dy * spread, dotR, p);
         c.restore();
         p.clearShadowLayer();
     }
@@ -666,7 +694,12 @@ public class HomeView extends View {
 
     private void click(String id) {
         if (id.startsWith("side_") || id.startsWith("tile_")) host.onSlotTap(id);
-        else if (id.equals("apps")) host.onAppsTap();
+        else if (id.equals("apps")) {
+            if (appsSpinStart >= 0) return; // already spinning
+            appsSpinStart = android.os.SystemClock.uptimeMillis();
+            invalidate();
+            handler.postDelayed(new Runnable() { @Override public void run() { host.onAppsTap(); } }, APPS_OPEN_DELAY_MS);
+        }
         else if (id.equals("clock")) host.onClockTap();
         else if (id.equals("prev")) { media.previous(); }
         else if (id.equals("next")) { media.next(); }
