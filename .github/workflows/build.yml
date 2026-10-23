@@ -35,6 +35,11 @@ jobs:
             echo "::warning::KEYSTORE_BASE64 secret is not set - building with a throwaway key"
           fi
 
+      - name: Release name
+        id: rel
+        # Zero-padded so GitHub lists releases in the right order (v012 after v011, not next to build-1)
+        run: echo "tag=v$(printf '%03d' ${{ github.run_number }})" >> "$GITHUB_OUTPUT"
+
       - name: Build
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -53,7 +58,7 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
+          tag_name: ${{ steps.rel.outputs.tag }}
           name: SlaterLauncher build ${{ github.run_number }}
           body: "Built from ${{ github.sha }}. Download SlaterLauncher.apk below and open it on the head unit."
           files: dist/SlaterLauncher.apk

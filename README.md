@@ -15,7 +15,9 @@ Layout numbers (panel positions, tile centres, colours) are on a 2000×1200 grid
 
 ## Getting the APK
 
-Open the **Releases** page of this repo and download `SlaterLauncher.apk` from the newest build.
+Newest build, direct: https://github.com/thedarkout17/SlaterLauncher/releases/latest/download/SlaterLauncher.apk
+
+All builds are on the **Releases** page. From build 12 on they are tagged `v012`, `v013`, … so they list in order. Builds 1–11 used `build-N` tags, which GitHub sorts as text (`build-10` and `build-11` appear next to `build-1`).
 
 ## Signing key
 
