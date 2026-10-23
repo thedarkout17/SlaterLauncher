@@ -1,0 +1,391 @@
+<title>Redline Launcher Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Chakra+Petch:wght@500;600&display=swap">
+<style>
+/* Layout: one dashboard bezel holding the live 2000x1200 screen, a short legend underneath. Single dark look, like a car interior at night. */
+:root {
+  --cabin: #0d0709;
+  --bezel: #1b1316;
+  --bezel-edge: #34262b;
+  --ink: #f3e9ec;
+  --muted: #a8949a;
+  --signal: #ff4a5a;
+  --display: "Chakra Petch", "Roboto", system-ui, sans-serif;
+  --body: "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--cabin); color: var(--ink); }
+body {
+  font-family: var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 40px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: 1.35rem; letter-spacing: .04em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--signal); }
+.spec { font-size: .8rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.bezel {
+  background: linear-gradient(180deg, var(--bezel), var(--cabin));
+  border: 1px solid var(--bezel-edge);
+  border-radius: 22px;
+  padding: clamp(8px, 1.6vw, 18px);
+  box-shadow: 0 30px 60px -30px #000, inset 0 1px 0 #ffffff12;
+}
+.screen { position: relative; width: 100%; aspect-ratio: 5 / 3; max-width: 100%; border-radius: 8px; overflow: hidden; background: #2a0508; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+.toast {
+  position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%);
+  background: #1d1215ee; color: var(--ink); border: 1px solid #ffffff22;
+  font-size: clamp(11px, 1.5vw, 15px); padding: .55em 1.1em; border-radius: 999px;
+  white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis;
+  transition: opacity .25s; pointer-events: none;
+}
+.sheet {
+  position: absolute; inset: 0; background: #0a0204b8; display: grid; place-items: center;
+}
+.sheet .box {
+  background: #23171b; border: 1px solid #ffffff1c; border-radius: 12px; width: min(78%, 460px);
+  max-height: 86%; overflow: auto; padding: 6px 0; font-size: clamp(11px, 1.45vw, 15px);
+}
+.sheet h2 { font-family: var(--display); font-weight: 600; font-size: 1.05em; margin: .6em 1.1em .5em; color: var(--ink); }
+.sheet button {
+  display: flex; align-items: center; gap: .8em; width: 100%; text-align: left; background: none; border: 0;
+  color: var(--ink); font: inherit; padding: .65em 1.2em; cursor: pointer;
+}
+.sheet button:hover, .sheet button:focus-visible { background: #ffffff10; outline: none; }
+.sheet .dot { width: 1.6em; height: 1.6em; border-radius: .45em; flex: none; }
+.drawer { position: absolute; inset: 0; background: #140306d9; display: grid; grid-template-columns: repeat(6, 1fr); align-content: center; gap: 4% 0; padding: 4% 6%; }
+.drawer button { background: none; border: 0; color: var(--ink); font: inherit; font-size: clamp(9px, 1.25vw, 14px); display: grid; justify-items: center; gap: .5em; cursor: pointer; }
+.drawer .ic { width: clamp(28px, 5.5vw, 64px); aspect-ratio: 1; border-radius: 22%; }
+.drawer button:focus-visible .ic { outline: 2px solid var(--ink); outline-offset: 3px; }
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 28px; font-size: .9rem; line-height: 1.45; }
+.legend div { min-width: 0; }
+.legend b { display: block; font-family: var(--display); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; font-size: .75rem; color: var(--signal); margin-bottom: 2px; }
+.legend p { margin: 0; color: var(--muted); }
+.note { font-size: .82rem; color: var(--muted); margin: 0; max-width: 70ch; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>REDLINE <span>LAUNCHER</span></h1>
+    <div class="spec">Preview · 2000 × 1200 · same layout as the APK</div>
+  </header>
+
+  <div class="bezel">
+    <div class="screen" id="screen">
+      <canvas id="c" width="2000" height="1200" aria-label="Launcher home screen preview"></canvas>
+      <div class="toast" id="toast" style="opacity:0"></div>
+      <div class="sheet" id="sheet" hidden></div>
+      <div class="drawer" id="drawer" hidden></div>
+    </div>
+  </div>
+
+  <section class="legend">
+    <div><b>Tap</b><p>Tiles and sidebar icons open their app. The play, skip and seek bar control the demo song.</p></div>
+    <div><b>Long-press an icon</b><p>Choose which app it opens. The real launcher remembers your pick.</p></div>
+    <div><b>Long-press the background</b><p>Wallpaper, music access and switching back to your original home screen.</p></div>
+    <div><b>Four-dot button</b><p>Opens the grid of every installed app.</p></div>
+  </section>
+  <p class="note">This runs in your browser, so app launches are simulated with a message. The song and app names are examples. On the head unit, the top and bottom bars come from the system and sit over the same wallpaper.</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  var toastEl = document.getElementById("toast"), sheet = document.getElementById("sheet"), drawer = document.getElementById("drawer");
+  var DW = 2000, DH = 1200;
+
+  // ---- layout, copied from HomeView.java
+  var SIDEBAR = [-60, 230, 215, 890], APPS = [-60, 900, 215, 1105], CLOCK = [290, 188, 780, 435], MUSIC = [290, 455, 780, 1105], ART = [428, 512, 643, 722];
+  var SIDE_X = 117, SIDE_Y = [330, 487, 643, 797];
+  var SIDE_NAMES = ["Settings", "Front Camera", "Bluetooth", "Maps"];
+  var PROG_Y = 917, PROG_X0 = 335, PROG_X1 = 740, CTRL_Y = 1000, CTRL_X = [388, 537, 685];
+  var TILE_X = [913, 1115, 1322, 1541, 1775], TILE_Y = 1017, TILE = 168;
+  var TILE_NAMES = ["Car Link 2.0", "Front Video", "Equalizer", "Music Player", "YouTube"];
+  var TILE_COLORS = [["#46E6B6", "#1FAA86"], ["#4DDCEB", "#2A9FDA"], ["#B772F4", "#7A4BE4"], ["#F46AA6", "#CF3569"], ["#F25050", "#C4282B"]];
+  var TEAL = "#45D6B4";
+
+  var FAKE_APPS = [["Car Link 2.0", "#2fbf95"], ["Front Video", "#33a8e0"], ["Equalizer", "#8f5ce9"], ["Music Player", "#e04a86"], ["YouTube", "#d93a3a"],
+    ["Maps", "#3c9a5a"], ["Bluetooth", "#2f6fe0"], ["Radio", "#e08a2f"], ["Settings", "#6b6f78"], ["Spotify", "#1db954"],
+    ["Waze", "#33ccff"], ["Files", "#5a7ab8"], ["Gallery", "#c94f9a"], ["Chrome", "#4f8ff0"], ["Weather", "#e0b12f"],
+    ["Steering Wheel", "#a5584e"], ["Calculator", "#5a5a64"], ["UI33 Launcher", "#7a6a70"]];
+  var choices = {};
+
+  // ---- demo song state
+  var song = { title: "Nightdrive", artist: "Neon Coast", dur: 214000, pos: 61000, playing: true, last: performance.now() };
+  var songs = [["Nightdrive", "Neon Coast"], ["Red Moon Highway", "Vector Palms"], ["Afterglow 86", "Chrome Hearts Club"]], songIdx = 0;
+
+  var wall = new Image(), blur = null;
+  wall.onload = function () {
+    var s = document.createElement("canvas"); s.width = Math.round(DW / 12); s.height = Math.round(DH / 12);
+    var sx = s.getContext("2d"); sx.filter = "blur(2.5px)"; sx.drawImage(wall, 0, 0, s.width, s.height);
+    blur = s; draw();
+  };
+  wall.src = "wallpaper.jpg";
+
+  var pressed = null, seeking = false, seekFrac = 0;
+
+  function rr(r, rad) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r[0], r[1], r[2] - r[0], r[3] - r[1], rad) : ctx.rect(r[0], r[1], r[2] - r[0], r[3] - r[1]); }
+
+  function glass(r, rad, tint) {
+    ctx.save(); ctx.fillStyle = "rgba(0,0,0,.2)"; rr([r[0] + 4, r[1] + 8, r[2] + 4, r[3] + 10], rad); ctx.fill(); ctx.restore();
+    ctx.save(); rr(r, rad); ctx.clip();
+    if (blur) { ctx.imageSmoothingQuality = "high"; ctx.drawImage(blur, 0, 0, DW, DH); }
+    ctx.fillStyle = "rgba(255,230,234,.18)"; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+    if (tint) { ctx.fillStyle = tint; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]); }
+    var g = ctx.createLinearGradient(0, r[1], 0, r[1] + Math.min(220, r[3] - r[1]));
+    g.addColorStop(0, "rgba(255,255,255,.15)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+    ctx.restore();
+    ctx.save(); rr(r, rad); ctx.lineWidth = 2.2; ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.stroke(); ctx.restore();
+  }
+
+  function white(stroke) {
+    ctx.fillStyle = ctx.strokeStyle = "#fff"; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = stroke || 1; ctx.shadowColor = "rgba(0,0,0,.33)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+  }
+  function noShadow() { ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; }
+  function pressScale(id, x, y) { var s = id === pressed ? 0.92 : 1; ctx.translate(x, y); ctx.scale(s, s); ctx.translate(-x, -y); }
+
+  function sidebar() {
+    for (var i = 0; i < 4; i++) {
+      var x = SIDE_X, y = SIDE_Y[i];
+      ctx.save(); pressScale("side" + i, x, y);
+      if (i === 0) { white(6.5); ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.fill(); }
+      if (i === 1) { white(6); rr([x - 27, y - 18, x + 27, y + 22], 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y + 2, 10, 0, 7); ctx.stroke(); rr([x - 12, y - 27, x + 12, y - 16], 3); ctx.fill(); }
+      if (i === 2) { white(6); ctx.beginPath(); ctx.moveTo(x - 17, y - 14); ctx.lineTo(x + 15, y + 15); ctx.lineTo(x, y + 30); ctx.lineTo(x, y - 30); ctx.lineTo(x + 15, y - 15); ctx.lineTo(x - 17, y + 14); ctx.stroke(); }
+      if (i === 3) {
+        white(6); ctx.beginPath(); ctx.moveTo(x, y + 30);
+        ctx.bezierCurveTo(x - 10, y + 14, x - 26, y + 2, x - 26, y - 14); ctx.bezierCurveTo(x - 26, y - 30, x - 14, y - 40, x, y - 40);
+        ctx.bezierCurveTo(x + 14, y - 40, x + 26, y - 30, x + 26, y - 14); ctx.bezierCurveTo(x + 26, y + 2, x + 10, y + 14, x, y + 30); ctx.closePath(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y - 14, 8, 0, 7); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    noShadow();
+  }
+
+  function appsButton() {
+    ctx.save(); pressScale("apps", 115, 997);
+    white(5.5); ctx.beginPath(); ctx.arc(115, 997, 42, 0, 7); ctx.stroke();
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) { ctx.beginPath(); ctx.arc(115 + d[0] * 15, 997 + d[1] * 15, 11, 0, 7); ctx.fill(); });
+    ctx.restore(); noShadow();
+  }
+
+  function clock() {
+    var now = new Date(), h = now.getHours() % 12 || 12, m = String(now.getMinutes()).padStart(2, "0");
+    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    ctx.save(); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    ctx.font = "700 124px Roboto, system-ui, sans-serif"; ctx.fillText(h + ":" + m, 535, 337);
+    ctx.font = "400 31px Roboto, system-ui, sans-serif"; if ("letterSpacing" in ctx) ctx.letterSpacing = "4px";
+    ctx.fillStyle = "rgba(255,255,255,.93)"; ctx.fillText(months[now.getMonth()] + " " + now.getDate(), 535, 395);
+    ctx.restore();
+  }
+
+  function position() {
+    if (song.playing) { var t = performance.now(); song.pos = Math.min(song.dur, song.pos + (t - song.last)); song.last = t; if (song.pos >= song.dur) nextSong(); }
+    return song.pos;
+  }
+
+  function art() {
+    ctx.save(); pressScale("art", 535, 617);
+    ctx.fillStyle = "rgba(0,0,0,.33)"; rr([ART[0] + 3, ART[1] + 8, ART[2] + 3, ART[3] + 10], 10); ctx.fill();
+    var g = ctx.createLinearGradient(ART[0], ART[1], ART[2], ART[3]);
+    var palettes = [["#9FF0F0", "#E6E0FA", "#F4C8EE"], ["#ffb3a1", "#ff5470", "#5b1030"], ["#b9f3ff", "#7c6cff", "#2a1550"]];
+    var pal = palettes[songIdx % 3]; g.addColorStop(0, pal[0]); g.addColorStop(.5, pal[1]); g.addColorStop(1, pal[2]);
+    ctx.fillStyle = g; rr(ART, 10); ctx.fill();
+    ctx.save(); rr(ART, 10); ctx.clip();
+    var seed = 7 + songIdx * 13; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var cols = ["#7A3CF0", "#B050F0", "#3C50E0", "#D040C8", "#5AA0F0"];
+    for (var i = 0; i < 60; i++) {
+      var a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 62, r = 4 + rnd() * 10;
+      ctx.globalAlpha = .8 + rnd() * .2; ctx.fillStyle = cols[Math.floor(rnd() * 5)];
+      ctx.beginPath(); ctx.arc(541 + Math.cos(a) * d, 613 + Math.sin(a) * d, r, 0, 7); ctx.fill();
+    }
+    ctx.restore(); ctx.restore(); ctx.globalAlpha = 1;
+  }
+
+  function music() {
+    art();
+    ctx.save(); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.font = "400 32px Roboto, system-ui, sans-serif"; ctx.fillText(song.title, 535, 845);
+    ctx.font = "400 22px Roboto, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillText(song.artist, 535, 878);
+    ctx.restore();
+
+    var frac = seeking ? seekFrac : position() / song.dur, kx = PROG_X0 + (PROG_X1 - PROG_X0) * frac;
+    ctx.fillStyle = TEAL; rr([PROG_X0, PROG_Y - 3.5, PROG_X1, PROG_Y + 3.5], 4); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.5)"; rr([kx, PROG_Y - 3.5, PROG_X1, PROG_Y + 3.5], 4); ctx.fill();
+    ctx.save(); ctx.fillStyle = TEAL; ctx.shadowColor = "rgba(0,0,0,.33)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.beginPath(); ctx.arc(kx, PROG_Y, seeking ? 16 : 12.5, 0, 7); ctx.fill(); ctx.restore();
+
+    var y = CTRL_Y, x;
+    ctx.save(); pressScale("prev", CTRL_X[0], y); white(); x = CTRL_X[0];
+    ctx.fillRect(x - 19, y - 21, 7, 42); ctx.beginPath(); ctx.moveTo(x + 19, y - 21); ctx.lineTo(x - 11, y); ctx.lineTo(x + 19, y + 21); ctx.fill(); ctx.restore();
+    ctx.save(); pressScale("play", CTRL_X[1], y); white(); x = CTRL_X[1];
+    if (song.playing) { rr([x - 17, y - 24, x - 5, y + 24], 2); ctx.fill(); rr([x + 5, y - 24, x + 17, y + 24], 2); ctx.fill(); }
+    else { ctx.beginPath(); ctx.moveTo(x - 15, y - 25); ctx.lineTo(x + 22, y); ctx.lineTo(x - 15, y + 25); ctx.fill(); }
+    ctx.restore();
+    ctx.save(); pressScale("next", CTRL_X[2], y); white(); x = CTRL_X[2];
+    ctx.beginPath(); ctx.moveTo(x - 19, y - 21); ctx.lineTo(x + 11, y); ctx.lineTo(x - 19, y + 21); ctx.fill(); ctx.fillRect(x + 12, y - 21, 7, 42); ctx.restore();
+    noShadow();
+  }
+
+  function tile(i) {
+    var cx = TILE_X[i], cy = TILE_Y, h = TILE / 2, r = [cx - h, cy - h, cx + h, cy + h];
+    ctx.save(); pressScale("tile" + i, cx, cy);
+    ctx.fillStyle = "rgba(0,0,0,.33)"; rr([r[0] + 2, r[1] + 10, r[2] + 2, r[3] + 12], 36); ctx.fill();
+    var g = ctx.createLinearGradient(0, r[1], 0, r[3]); g.addColorStop(0, TILE_COLORS[i][0]); g.addColorStop(1, TILE_COLORS[i][1]);
+    ctx.fillStyle = g; rr(r, 36); ctx.fill();
+    var rg = ctx.createRadialGradient(cx - 30, r[1] + 20, 0, cx - 30, r[1] + 20, TILE * .8);
+    rg.addColorStop(0, "rgba(255,255,255,.25)"); rg.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = rg; rr(r, 36); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.25)"; rr(r, 36); ctx.stroke();
+
+    if (i === 0) {
+      white(7); rr([cx - 30, cy - 50, cx + 30, cy + 50], 11); ctx.stroke(); white(); ctx.fillStyle = "rgba(255,255,255,.95)";
+      rr([cx - 18, cy - 36, cx + 18, cy + 14], 4); ctx.fill();
+      for (var k = -1; k <= 1; k++) { var dx = cx + k * 14, dy = cy + 31; ctx.beginPath(); ctx.moveTo(dx, dy - 6); ctx.lineTo(dx + 6, dy); ctx.lineTo(dx, dy + 6); ctx.lineTo(dx - 6, dy); ctx.fill(); }
+    } else if (i === 1) {
+      white(); rr([cx - 50, cy - 30, cx + 50, cy + 40], 12); ctx.fill(); rr([cx - 20, cy - 44, cx + 20, cy - 24], 6); ctx.fill(); noShadow();
+      ctx.fillStyle = TILE_COLORS[1][1]; ctx.beginPath(); ctx.arc(cx, cy + 5, 22, 0, 7); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy + 5, 12, 0, 7); ctx.fill();
+      ctx.fillStyle = TILE_COLORS[1][1]; ctx.beginPath(); ctx.arc(cx, cy + 5, 6, 0, 7); ctx.fill();
+    } else if (i === 2) {
+      var knob = [12, -18, 18, -6, 10];
+      for (var j = 0; j < 5; j++) { var x = cx - 48 + j * 24; white(5); ctx.beginPath(); ctx.moveTo(x, cy - 46); ctx.lineTo(x, cy + 46); ctx.stroke(); white(); rr([x - 11, cy + knob[j] - 9, x + 11, cy + knob[j] + 9], 8); ctx.fill(); }
+    } else if (i === 3) {
+      white(); ctx.save(); ctx.translate(cx - 22, cy + 30); ctx.rotate(-18 * Math.PI / 180);
+      ctx.beginPath(); ctx.ellipse(-1, 0, 21, 16, 0, 0, 7); ctx.fill(); ctx.restore();
+      ctx.fillRect(cx - 9, cy - 50, 11, 80);
+      ctx.beginPath(); ctx.moveTo(cx - 4, cy - 52); ctx.bezierCurveTo(cx + 18, cy - 46, cx + 40, cy - 36, cx + 42, cy - 10);
+      ctx.bezierCurveTo(cx + 34, cy - 24, cx + 18, cy - 28, cx - 4, cy - 26); ctx.fill();
+    } else {
+      white(); ctx.beginPath(); ctx.moveTo(cx - 28, cy - 38); ctx.lineTo(cx + 42, cy); ctx.lineTo(cx - 28, cy + 38); ctx.fill();
+    }
+    noShadow(); ctx.restore();
+  }
+
+  function draw() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (wall.complete && wall.naturalWidth) ctx.drawImage(wall, 0, 0, DW, DH); else { ctx.fillStyle = "#2a0508"; ctx.fillRect(0, 0, DW, DH); }
+    glass(SIDEBAR, 34); glass(APPS, 34, "rgba(224,36,44,.4)"); glass(CLOCK, 26); glass(MUSIC, 26);
+    sidebar(); appsButton(); clock(); music();
+    for (var i = 0; i < 5; i++) tile(i);
+  }
+  (function loop() { draw(); requestAnimationFrame(loop); })();
+
+  // ---- interaction
+  function hit(x, y) {
+    for (var i = 0; i < 4; i++) if (Math.hypot(x - SIDE_X, y - SIDE_Y[i]) < 72) return "side" + i;
+    if (x <= APPS[2] && y >= APPS[1] && y <= APPS[3]) return "apps";
+    for (i = 0; i < 5; i++) if (Math.abs(x - TILE_X[i]) < TILE / 2 + 8 && Math.abs(y - TILE_Y) < TILE / 2 + 8) return "tile" + i;
+    if (x >= MUSIC[0] && x <= MUSIC[2] && y >= MUSIC[1] && y <= MUSIC[3]) {
+      if (Math.abs(y - PROG_Y) < 30 && x > PROG_X0 - 25 && x < PROG_X1 + 25) return "seek";
+      for (i = 0; i < 3; i++) if (Math.hypot(x - CTRL_X[i], y - CTRL_Y) < 60) return ["prev", "play", "next"][i];
+      if (y < PROG_Y - 30) return "art";
+      return "music";
+    }
+    if (x >= CLOCK[0] && x <= CLOCK[2] && y >= CLOCK[1] && y <= CLOCK[3]) return "clock";
+    return "bg";
+  }
+  function toDesign(e) { var b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * DW, (e.clientY - b.top) / b.height * DH]; }
+
+  var timer = null, longFired = false, downAt = null;
+  cv.addEventListener("pointerdown", function (e) {
+    var p = toDesign(e); downAt = [e.clientX, e.clientY]; longFired = false; pressed = hit(p[0], p[1]);
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    if (pressed === "seek") { seeking = true; seekFrac = clamp((p[0] - PROG_X0) / (PROG_X1 - PROG_X0)); return; }
+    if (pressed !== "music") timer = setTimeout(function () { longFired = true; var id = pressed; pressed = null; longPress(id); }, 550);
+  });
+  cv.addEventListener("pointermove", function (e) {
+    if (seeking) { seekFrac = clamp((toDesign(e)[0] - PROG_X0) / (PROG_X1 - PROG_X0)); return; }
+    if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 8) { clearTimeout(timer); var p = toDesign(e); if (pressed && pressed !== hit(p[0], p[1])) pressed = null; }
+  });
+  cv.addEventListener("pointerup", function () {
+    clearTimeout(timer); downAt = null;
+    if (seeking) { seeking = false; song.pos = seekFrac * song.dur; song.last = performance.now(); pressed = null; return; }
+    if (!longFired && pressed) tap(pressed);
+    pressed = null;
+  });
+  cv.addEventListener("pointercancel", function () { clearTimeout(timer); seeking = false; pressed = null; });
+  cv.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  function clamp(v) { return Math.max(0, Math.min(1, v)); }
+
+  function nameFor(id) {
+    if (choices[id]) return choices[id];
+    if (id.indexOf("tile") === 0) return TILE_NAMES[+id.slice(4)];
+    if (id.indexOf("side") === 0) return SIDE_NAMES[+id.slice(4)];
+    return id;
+  }
+  function slotTitle(id) {
+    return id.indexOf("tile") === 0 ? ["Car Link", "Front Video", "Equalizer", "Music", "YouTube"][+id.slice(4)] + " tile"
+      : ["Settings", "Camera", "Bluetooth", "Navigation"][+id.slice(4)] + " button";
+  }
+
+  function nextSong() { songIdx = (songIdx + 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; song.last = performance.now(); }
+  function tap(id) {
+    if (id.indexOf("tile") === 0 || id.indexOf("side") === 0) toast("Opening " + nameFor(id) + "…");
+    else if (id === "apps") openDrawer();
+    else if (id === "clock") toast("Opening Clock…");
+    else if (id === "play") { song.playing = !song.playing; song.last = performance.now(); }
+    else if (id === "next") nextSong();
+    else if (id === "prev") { if (song.pos > 3000) song.pos = 0; else { songIdx = (songIdx + songs.length - 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; } song.last = performance.now(); }
+    else if (id === "art") toast("Opening the music app that's playing…");
+  }
+  function longPress(id) {
+    if (id && (id.indexOf("tile") === 0 || id.indexOf("side") === 0)) pickApp(id);
+    else bgMenu();
+  }
+
+  var toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(function () { toastEl.style.opacity = 0; }, 1800); }
+
+  function openSheet(title, items) {
+    sheet.innerHTML = "";
+    var box = document.createElement("div"); box.className = "box"; box.setAttribute("role", "dialog");
+    var h = document.createElement("h2"); h.textContent = title; box.appendChild(h);
+    items.forEach(function (it) {
+      var b = document.createElement("button"); b.type = "button";
+      if (it.color) { var d = document.createElement("span"); d.className = "dot"; d.style.background = it.color; b.appendChild(d); }
+      b.appendChild(document.createTextNode(it.label));
+      b.addEventListener("click", function () { sheet.hidden = true; if (it.run) it.run(); });
+      box.appendChild(b);
+    });
+    sheet.appendChild(box); sheet.hidden = false;
+    var first = box.querySelector("button"); if (first) first.focus();
+  }
+  sheet.addEventListener("click", function (e) { if (e.target === sheet) sheet.hidden = true; });
+
+  function pickApp(id) {
+    var items = FAKE_APPS.map(function (a) { return { label: a[0], color: a[1], run: function () { choices[id] = a[0]; toast(slotTitle(id) + " now opens " + a[0]); } }; });
+    items.unshift({ label: "Automatic (match by name)", run: function () { delete choices[id]; toast(slotTitle(id) + " set to automatic"); } });
+    openSheet("Choose app for the " + slotTitle(id), items);
+  }
+  function bgMenu() {
+    openSheet("Redline Launcher", [
+      { label: "Change wallpaper", run: function () { toast("Opens your gallery to pick a wallpaper"); } },
+      { label: "Use the default wallpaper", run: function () { toast("Wallpaper reset"); } },
+      { label: "Show song info (music access)", run: function () { toast("Opens notification access settings"); } },
+      { label: "Android settings", run: function () { toast("Opening Settings…"); } },
+      { label: "Choose a different home app", run: function () { toast("Opens Home app settings, where you can pick UI33 again"); } }
+    ]);
+  }
+  function openDrawer() {
+    drawer.innerHTML = "";
+    FAKE_APPS.forEach(function (a) {
+      var b = document.createElement("button"); b.type = "button";
+      var ic = document.createElement("span"); ic.className = "ic"; ic.style.background = "linear-gradient(160deg," + a[1] + ", #00000055)";
+      var t = document.createElement("span"); t.textContent = a[0];
+      b.appendChild(ic); b.appendChild(t);
+      b.addEventListener("click", function (e) { e.stopPropagation(); drawer.hidden = true; toast("Opening " + a[0] + "…"); });
+      drawer.appendChild(b);
+    });
+    drawer.hidden = false;
+  }
+  drawer.addEventListener("click", function () { drawer.hidden = true; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { sheet.hidden = true; drawer.hidden = true; } });
+})();
+</script>
