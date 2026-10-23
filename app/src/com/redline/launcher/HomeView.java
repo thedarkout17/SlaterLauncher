@@ -54,7 +54,8 @@ public class HomeView extends View {
     static final float BEVEL_RADIUS = 16f;
     static final RectF CLOCK = new RectF(290, 188, 780, 435);
     static final RectF MUSIC = new RectF(290, 455, 780, 1105);
-    static final RectF ART = new RectF(428, 512, 643, 722);
+    static final RectF ART = new RectF(375, 490, 695, 810);   // album cover, 320 px square
+    static final float TITLE_Y = 857f, ARTIST_Y = 886f;
     static final float SIDE_X = 117f;
     static final float[] SIDE_Y = {330f, 487f, 643f, 797f};
     static final String[] SIDE_SLOTS = {Slots.SIDE_SETTINGS, Slots.SIDE_CAMERA, Slots.SIDE_BT, Slots.SIDE_NAV};
@@ -412,7 +413,7 @@ public class HomeView extends View {
         p.setStyle(Paint.Style.FILL);
         p.setColor(0x55000000);
         tmp.set(ART.left + 3, ART.top + 8, ART.right + 3, ART.bottom + 10);
-        c.drawRoundRect(tmp, 10, 10, p);
+        c.drawRoundRect(tmp, 14, 14, p);
         if (art != null) {
             BitmapShader sh = new BitmapShader(art, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
             Matrix m = new Matrix();
@@ -422,7 +423,7 @@ public class HomeView extends View {
             sh.setLocalMatrix(m);
             p.setShader(sh);
             p.setColor(Color.WHITE);
-            c.drawRoundRect(ART, 10, 10, p);
+            c.drawRoundRect(ART, 14, 14, p);
         } else {
             drawPlaceholderArt(c);
         }
@@ -440,13 +441,13 @@ public class HomeView extends View {
         text.setColor(Color.WHITE);
         text.setShadowLayer(6, 0, 2, 0x66000000);
         title = TextUtils.ellipsize(title, new android.text.TextPaint(text), MUSIC.width() - 80, TextUtils.TruncateAt.END).toString();
-        c.drawText(title, MUSIC.centerX(), 845, text);
+        c.drawText(title, MUSIC.centerX(), TITLE_Y, text);
         String artist = media.artist();
         if (!TextUtils.isEmpty(artist)) {
             text.setTextSize(22);
             text.setColor(0xB3FFFFFF);
             artist = TextUtils.ellipsize(artist, new android.text.TextPaint(text), MUSIC.width() - 80, TextUtils.TruncateAt.END).toString();
-            c.drawText(artist, MUSIC.centerX(), 878, text);
+            c.drawText(artist, MUSIC.centerX(), ARTIST_Y, text);
         }
         text.clearShadowLayer();
         text.setLetterSpacing(0f);
@@ -503,18 +504,19 @@ public class HomeView extends View {
     private void drawPlaceholderArt(Canvas c) {
         p.setShader(new LinearGradient(ART.left, ART.top, ART.right, ART.bottom,
                 new int[]{0xFF9FF0F0, 0xFFE6E0FA, 0xFFF4C8EE}, null, Shader.TileMode.CLAMP));
-        c.drawRoundRect(ART, 10, 10, p);
+        c.drawRoundRect(ART, 14, 14, p);
         p.setShader(null);
         // splash of dots, like the mockup's artwork
-        float cx = ART.centerX() + 6, cy = ART.centerY() - 4;
+        float k = ART.width() / 215f; // dot pattern scales with the cover
+        float cx = ART.centerX() + 6 * k, cy = ART.centerY() - 4 * k;
         int[] cols = {0xFF7A3CF0, 0xFFB050F0, 0xFF3C50E0, 0xFFD040C8, 0xFF5AA0F0};
         java.util.Random r = new java.util.Random(7);
         c.save();
         c.clipRect(ART);
         for (int i = 0; i < 60; i++) {
             double a = r.nextDouble() * Math.PI * 2;
-            double d = Math.sqrt(r.nextDouble()) * 62;
-            float rad = 4 + r.nextFloat() * 10;
+            double d = Math.sqrt(r.nextDouble()) * 62 * k;
+            float rad = (4 + r.nextFloat() * 10) * k;
             p.setColor(cols[r.nextInt(cols.length)]);
             p.setAlpha(200 + r.nextInt(55));
             c.drawCircle(cx + (float) (Math.cos(a) * d), cy + (float) (Math.sin(a) * d), rad, p);

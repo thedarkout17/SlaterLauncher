@@ -100,7 +100,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var DW = 2000, DH = 1200;
 
   // ---- layout, copied from HomeView.java
-  var SIDEBAR = [-60, 198, 215, 905], APPS = [-60, 880, 215, 1105], CLOCK = [290, 188, 780, 435], MUSIC = [290, 455, 780, 1105], ART = [428, 512, 643, 722];
+  var SIDEBAR = [-60, 198, 215, 905], APPS = [-60, 880, 215, 1105], CLOCK = [290, 188, 780, 435], MUSIC = [290, 455, 780, 1105], ART = [375, 490, 695, 810], TITLE_Y = 857, ARTIST_Y = 886;
   // Beveled outlines: top/bottom edges slant to the screen edge, every bend rounded by BEVEL_RADIUS (same as HomeView.java)
   var SIDEBAR_SHAPE = [-60, 198, 215, 290, 215, 850, -60, 905];
   var APPS_SHAPE = [-60, 935, 215, 880, 215, 1105, -60, 1105];
@@ -223,19 +223,20 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   }
 
   function art() {
-    ctx.save(); pressScale("art", 535, 617);
-    ctx.fillStyle = "rgba(0,0,0,.33)"; rr([ART[0] + 3, ART[1] + 8, ART[2] + 3, ART[3] + 10], 10); ctx.fill();
+    ctx.save(); pressScale("art", (ART[0] + ART[2]) / 2, (ART[1] + ART[3]) / 2);
+    ctx.fillStyle = "rgba(0,0,0,.33)"; rr([ART[0] + 3, ART[1] + 8, ART[2] + 3, ART[3] + 10], 14); ctx.fill();
     var g = ctx.createLinearGradient(ART[0], ART[1], ART[2], ART[3]);
     var palettes = [["#9FF0F0", "#E6E0FA", "#F4C8EE"], ["#ffb3a1", "#ff5470", "#5b1030"], ["#b9f3ff", "#7c6cff", "#2a1550"]];
     var pal = palettes[songIdx % 3]; g.addColorStop(0, pal[0]); g.addColorStop(.5, pal[1]); g.addColorStop(1, pal[2]);
-    ctx.fillStyle = g; rr(ART, 10); ctx.fill();
-    ctx.save(); rr(ART, 10); ctx.clip();
+    ctx.fillStyle = g; rr(ART, 14); ctx.fill();
+    ctx.save(); rr(ART, 14); ctx.clip();
+    var k = (ART[2] - ART[0]) / 215, acx = (ART[0] + ART[2]) / 2 + 6 * k, acy = (ART[1] + ART[3]) / 2 - 4 * k;
     var seed = 7 + songIdx * 13; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
     var cols = ["#7A3CF0", "#B050F0", "#3C50E0", "#D040C8", "#5AA0F0"];
     for (var i = 0; i < 60; i++) {
-      var a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 62, r = 4 + rnd() * 10;
+      var a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 62 * k, r = (4 + rnd() * 10) * k;
       ctx.globalAlpha = .8 + rnd() * .2; ctx.fillStyle = cols[Math.floor(rnd() * 5)];
-      ctx.beginPath(); ctx.arc(541 + Math.cos(a) * d, 613 + Math.sin(a) * d, r, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(acx + Math.cos(a) * d, acy + Math.sin(a) * d, r, 0, 7); ctx.fill();
     }
     ctx.restore(); ctx.restore(); ctx.globalAlpha = 1;
   }
@@ -243,8 +244,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function music() {
     art();
     ctx.save(); ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
-    ctx.font = "400 32px Roboto, system-ui, sans-serif"; ctx.fillText(song.title, 535, 845);
-    ctx.font = "400 22px Roboto, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillText(song.artist, 535, 878);
+    ctx.font = "400 32px Roboto, system-ui, sans-serif"; ctx.fillText(song.title, 535, TITLE_Y);
+    ctx.font = "400 22px Roboto, system-ui, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillText(song.artist, 535, ARTIST_Y);
     ctx.restore();
 
     var frac = seeking ? seekFrac : position() / song.dur, kx = PROG_X0 + (PROG_X1 - PROG_X0) * frac;
