@@ -40,6 +40,7 @@ public class HomeView extends View {
         void onClockTap();
         void onBackgroundLongPress();
         void onMusicInfoTap();
+        void onSpeedTap();
     }
 
     static final float DW = 2000f, DH = 1200f;
@@ -74,6 +75,10 @@ public class HomeView extends View {
     };
     static final int TEAL = 0xFF45D6B4;
 
+    // ---- speed, drawn in the middle of the wallpaper's moon
+    static final float MOON_CX = 980f, MOON_CY = 282f, MOON_R = 168f;
+    static final float SPEED_SIZE = 150f, SPEED_Y = 318f, MPH_SIZE = 34f, MPH_Y = 370f;
+
     // ---- glass panel look (0 = invisible, 255 = solid). Lower = more see-through.
     static final int GLASS_BLUR_ALPHA = 165;   // how much frosted blur covers the wallpaper
     static final int GLASS_TINT = 0x1FFFE6EA;  // light pink-white wash over the blur
@@ -82,6 +87,7 @@ public class HomeView extends View {
 
     private final Host host;
     private final MediaHelper media;
+    private final SpeedHelper speed;
 
     private Bitmap wallpaper, wallScaled, blur;
     private float scale = 1f, offX, offY;
@@ -122,10 +128,11 @@ public class HomeView extends View {
         }
     };
 
-    public HomeView(Context c, Host host, MediaHelper media) {
+    public HomeView(Context c, Host host, MediaHelper media, SpeedHelper speed) {
         super(c);
         this.host = host;
         this.media = media;
+        this.speed = speed;
         slop = ViewConfiguration.get(c).getScaledTouchSlop();
         text.setColor(Color.WHITE);
         setLayerType(LAYER_TYPE_HARDWARE, null);
@@ -202,6 +209,8 @@ public class HomeView extends View {
         c.save();
         c.translate(offX, offY);
         c.scale(scale, scale);
+
+        drawSpeed(c);
 
         glass(c, roundedPolygon(SIDEBAR_SHAPE, BEVEL_RADIUS), SIDEBAR, 0);
         glass(c, roundedPolygon(APPS_SHAPE, BEVEL_RADIUS), APPS, APPS_TINT);
@@ -377,6 +386,30 @@ public class HomeView extends View {
                 c.drawCircle(cx + dx * spread, cy + dy * spread, dotR, p);
         c.restore();
         p.clearShadowLayer();
+    }
+
+    private void drawSpeed(Canvas c) {
+        int mph = speed.mph();
+        String num = mph < 0 ? "--" : String.valueOf(mph);
+        float s = press("speed");
+        c.save();
+        c.scale(s, s, MOON_CX, MOON_CY);
+        text.setTextAlign(Paint.Align.CENTER);
+        text.setColor(Color.WHITE);
+        text.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        text.setLetterSpacing(-0.02f);
+        text.setTextSize(SPEED_SIZE);
+        text.setShadowLayer(22, 0, 4, 0xCC2A0006);
+        c.drawText(num, MOON_CX, SPEED_Y, text);
+        text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        text.setLetterSpacing(0.3f);
+        text.setTextSize(MPH_SIZE);
+        text.setColor(0xEEFFFFFF);
+        text.setShadowLayer(12, 0, 2, 0xCC2A0006);
+        c.drawText("MPH", MOON_CX + MPH_SIZE * 0.15f, MPH_Y, text); // nudge right to balance the trailing letter-space
+        text.clearShadowLayer();
+        text.setLetterSpacing(0f);
+        c.restore();
     }
 
     private void drawClock(Canvas c) {
@@ -649,6 +682,7 @@ public class HomeView extends View {
             return "music";
         }
         if (CLOCK.contains(x, y)) return "clock";
+        if (dist(x, y, MOON_CX, MOON_CY) < MOON_R) return "speed";
         return "bg";
     }
 
@@ -714,6 +748,7 @@ public class HomeView extends View {
             handler.postDelayed(new Runnable() { @Override public void run() { host.onAppsTap(); } }, APPS_OPEN_DELAY_MS);
         }
         else if (id.equals("clock")) host.onClockTap();
+        else if (id.equals("speed")) host.onSpeedTap();
         else if (id.equals("prev")) { media.previous(); }
         else if (id.equals("next")) { media.next(); }
         else if (id.equals("play")) { media.playPause(); }

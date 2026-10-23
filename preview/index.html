@@ -112,6 +112,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var TILE_NAMES = ["Car Link 2.0", "Front Video", "Equalizer", "Music Player", "YouTube"];
   var TILE_COLORS = [["#46E6B6", "#1FAA86"], ["#4DDCEB", "#2A9FDA"], ["#B772F4", "#7A4BE4"], ["#F46AA6", "#CF3569"], ["#F25050", "#C4282B"]];
   var TEAL = "#45D6B4";
+  // speed in the moon (same numbers as HomeView.java)
+  var MOON_CX = 980, MOON_CY = 282, MOON_R = 168, SPEED_SIZE = 150, SPEED_Y = 318, MPH_SIZE = 34, MPH_Y = 370;
   // glass panel look, same values as HomeView.java (0 = invisible, 1 = solid)
   var GLASS_BLUR_ALPHA = 165 / 255, GLASS_TINT = "rgba(255,230,234,.12)", GLASS_SHEEN = "rgba(255,255,255,.10)", APPS_TINT = "rgba(224,36,44,.3)";
 
@@ -205,6 +207,33 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     var spread = 15 + 6 * bump, dotR = 11 - 2 * bump;
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) { ctx.beginPath(); ctx.arc(cx + d[0] * spread, cy + d[1] * spread, dotR, 0, 7); ctx.fill(); });
     ctx.restore(); noShadow();
+  }
+
+  // Simulated drive for the demo: stopped, pull away, cruise, slow down, stop. Loops every 48 s.
+  var driveStart = performance.now();
+  function demoMph() {
+    var t = ((performance.now() - driveStart) / 1000) % 48;
+    var v;
+    if (t < 4) v = 0;
+    else if (t < 14) v = 45 * (1 - Math.pow(1 - (t - 4) / 10, 2));
+    else if (t < 36) v = 52 + 9 * Math.sin((t - 14) / 3.2) + 3 * Math.sin((t - 14) * 1.7);
+    else if (t < 44) v = (52 + 9 * Math.sin(22 / 3.2) + 3 * Math.sin(22 * 1.7)) * (1 - (t - 36) / 8);
+    else v = 0;
+    return Math.max(0, Math.round(v));
+  }
+
+  function speedReadout() {
+    ctx.save(); pressScale("speed", MOON_CX, MOON_CY);
+    ctx.textAlign = "center"; ctx.fillStyle = "#fff";
+    ctx.shadowColor = "rgba(42,0,6,.8)"; ctx.shadowBlur = 22; ctx.shadowOffsetY = 4;
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "-3px";
+    ctx.font = "700 " + SPEED_SIZE + "px Roboto, system-ui, sans-serif";
+    ctx.fillText(String(demoMph()), MOON_CX, SPEED_Y);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "10px";
+    ctx.shadowBlur = 12; ctx.shadowOffsetY = 2; ctx.fillStyle = "rgba(255,255,255,.93)";
+    ctx.font = "500 " + MPH_SIZE + "px Roboto, system-ui, sans-serif";
+    ctx.fillText("MPH", MOON_CX + MPH_SIZE * 0.15, MPH_Y);
+    ctx.restore();
   }
 
   function clock() {
@@ -307,6 +336,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (wall.complete && wall.naturalWidth) ctx.drawImage(wall, 0, 0, DW, DH); else { ctx.fillStyle = "#2a0508"; ctx.fillRect(0, 0, DW, DH); }
+    speedReadout();
     glass(function () { roundedPolygon(SIDEBAR_SHAPE, BEVEL_RADIUS); }, SIDEBAR); glass(function () { roundedPolygon(APPS_SHAPE, BEVEL_RADIUS); }, APPS, APPS_TINT);
     glass(function () { rr(CLOCK, 26); }, CLOCK); glass(function () { rr(MUSIC, 26); }, MUSIC);
     sidebar(); appsButton(); clock(); music();
@@ -326,6 +356,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
       return "music";
     }
     if (x >= CLOCK[0] && x <= CLOCK[2] && y >= CLOCK[1] && y <= CLOCK[3]) return "clock";
+    if (Math.hypot(x - MOON_CX, y - MOON_CY) < MOON_R) return "speed";
     return "bg";
   }
   function toDesign(e) { var b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * DW, (e.clientY - b.top) / b.height * DH]; }
@@ -367,6 +398,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     if (id.indexOf("tile") === 0 || id.indexOf("side") === 0) toast("Opening " + nameFor(id) + "…");
     else if (id === "apps") { if (appsSpinStart >= 0) return; appsSpinStart = performance.now(); setTimeout(openDrawer, APPS_OPEN_DELAY_MS); }
     else if (id === "clock") toast("Opening Clock…");
+    else if (id === "speed") toast("On the head unit this is your GPS speed. The demo simulates a drive.");
     else if (id === "play") { song.playing = !song.playing; song.last = performance.now(); }
     else if (id === "next") nextSong();
     else if (id === "prev") { if (song.pos > 3000) song.pos = 0; else { songIdx = (songIdx + songs.length - 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; } song.last = performance.now(); }

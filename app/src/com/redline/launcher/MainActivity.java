@@ -22,11 +22,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
-public class MainActivity extends Activity implements HomeView.Host, MediaHelper.Listener {
+public class MainActivity extends Activity implements HomeView.Host, MediaHelper.Listener, SpeedHelper.Listener {
 
     private static final int REQ_WALLPAPER = 41;
+    private static final int REQ_LOCATION = 42;
     private HomeView home;
     private MediaHelper media;
+    private SpeedHelper speed;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -44,11 +46,16 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
         }
 
         media = new MediaHelper(this, this);
-        home = new HomeView(this, this, media);
+        speed = new SpeedHelper(this, this);
+        home = new HomeView(this, this, media, speed);
         setContentView(home);
         home.setWallpaper(loadWallpaper());
 
         SharedPreferences sp = getSharedPreferences("app", MODE_PRIVATE);
+        if (!speed.hasPermission() && !sp.getBoolean("askedLocation", false)) {
+            sp.edit().putBoolean("askedLocation", true).apply();
+            requestLocation();
+        }
         if (!sp.getBoolean("tipShown", false)) {
             sp.edit().putBoolean("tipShown", true).apply();
             Toast.makeText(this, "Tip: long-press any icon to choose its app, or long-press the background for options",
@@ -59,16 +66,45 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     @Override protected void onResume() {
         super.onResume();
         media.start();
+        speed.start();
         home.invalidate();
     }
 
     @Override protected void onPause() {
         media.stop();
+        speed.stop();
         super.onPause();
     }
 
     @Override public void onBackPressed() {
         // This is the home screen; there is nothing to go back to.
+    }
+
+    @Override public void onSpeedChanged() {
+        if (home != null) home.postInvalidate();
+    }
+
+    @Override public void onSpeedTap() {
+        if (!speed.hasPermission()) {
+            requestLocation();
+        } else if (!speed.gpsEnabled()) {
+            Toast.makeText(this, "Turn on location so the speed can be shown", Toast.LENGTH_LONG).show();
+            Slots.start(this, new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        } else if (speed.mph() < 0) {
+            Toast.makeText(this, "Waiting for a GPS signal", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void requestLocation() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION}, REQ_LOCATION);
+        }
+    }
+
+    @Override public void onRequestPermissionsResult(int req, String[] perms, int[] results) {
+        super.onRequestPermissionsResult(req, perms, results);
+        if (req == REQ_LOCATION && speed.hasPermission()) speed.start();
     }
 
     @Override public void onMediaChanged() {
