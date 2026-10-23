@@ -68,6 +68,12 @@ public class HomeView extends View {
     };
     static final int TEAL = 0xFF45D6B4;
 
+    // ---- glass panel look (0 = invisible, 255 = solid). Lower = more see-through.
+    static final int GLASS_BLUR_ALPHA = 165;   // how much frosted blur covers the wallpaper
+    static final int GLASS_TINT = 0x1FFFE6EA;  // light pink-white wash over the blur
+    static final int GLASS_SHEEN = 0x1AFFFFFF; // highlight at the top of each panel
+    static final int APPS_TINT = 0x4DE0242C;   // red wash on the four-dot button
+
     private final Host host;
     private final MediaHelper media;
 
@@ -187,7 +193,7 @@ public class HomeView extends View {
         c.scale(scale, scale);
 
         glass(c, SIDEBAR, 34, 0);
-        glass(c, APPS, 34, 0x66E0242C);
+        glass(c, APPS, 34, APPS_TINT);
         glass(c, CLOCK, 26, 0);
         glass(c, MUSIC, 26, 0);
 
@@ -216,13 +222,15 @@ public class HomeView extends View {
         if (blur != null) {
             tmp.set(-offX / scale, -offY / scale, (getWidth() - offX) / scale, (getHeight() - offY) / scale);
             p.setColor(Color.WHITE);
+            p.setAlpha(GLASS_BLUR_ALPHA);
             c.drawBitmap(blur, null, tmp, p);
+            p.setAlpha(255);
         }
-        p.setColor(0x2EFFE6EA);
+        p.setColor(GLASS_TINT);
         c.drawRect(r, p);
         if (tint != 0) { p.setColor(tint); c.drawRect(r, p); }
         p.setShader(new LinearGradient(0, r.top, 0, r.top + Math.min(220, r.height()),
-                0x26FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+                GLASS_SHEEN, 0x00FFFFFF, Shader.TileMode.CLAMP));
         c.drawRect(r, p);
         p.setShader(null);
         c.restore();

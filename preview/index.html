@@ -108,6 +108,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var TILE_NAMES = ["Car Link 2.0", "Front Video", "Equalizer", "Music Player", "YouTube"];
   var TILE_COLORS = [["#46E6B6", "#1FAA86"], ["#4DDCEB", "#2A9FDA"], ["#B772F4", "#7A4BE4"], ["#F46AA6", "#CF3569"], ["#F25050", "#C4282B"]];
   var TEAL = "#45D6B4";
+  // glass panel look, same values as HomeView.java (0 = invisible, 1 = solid)
+  var GLASS_BLUR_ALPHA = 165 / 255, GLASS_TINT = "rgba(255,230,234,.12)", GLASS_SHEEN = "rgba(255,255,255,.10)", APPS_TINT = "rgba(224,36,44,.3)";
 
   var FAKE_APPS = [["Car Link 2.0", "#2fbf95"], ["Front Video", "#33a8e0"], ["Equalizer", "#8f5ce9"], ["Music Player", "#e04a86"], ["YouTube", "#d93a3a"],
     ["Maps", "#3c9a5a"], ["Bluetooth", "#2f6fe0"], ["Radio", "#e08a2f"], ["Settings", "#6b6f78"], ["Spotify", "#1db954"],
@@ -134,11 +136,11 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function glass(r, rad, tint) {
     ctx.save(); ctx.fillStyle = "rgba(0,0,0,.2)"; rr([r[0] + 4, r[1] + 8, r[2] + 4, r[3] + 10], rad); ctx.fill(); ctx.restore();
     ctx.save(); rr(r, rad); ctx.clip();
-    if (blur) { ctx.imageSmoothingQuality = "high"; ctx.drawImage(blur, 0, 0, DW, DH); }
-    ctx.fillStyle = "rgba(255,230,234,.18)"; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+    if (blur) { ctx.imageSmoothingQuality = "high"; ctx.globalAlpha = GLASS_BLUR_ALPHA; ctx.drawImage(blur, 0, 0, DW, DH); ctx.globalAlpha = 1; }
+    ctx.fillStyle = GLASS_TINT; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
     if (tint) { ctx.fillStyle = tint; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]); }
     var g = ctx.createLinearGradient(0, r[1], 0, r[1] + Math.min(220, r[3] - r[1]));
-    g.addColorStop(0, "rgba(255,255,255,.15)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    g.addColorStop(0, GLASS_SHEEN); g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g; ctx.fillRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
     ctx.restore();
     ctx.save(); rr(r, rad); ctx.lineWidth = 2.2; ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.stroke(); ctx.restore();
@@ -271,7 +273,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function draw() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (wall.complete && wall.naturalWidth) ctx.drawImage(wall, 0, 0, DW, DH); else { ctx.fillStyle = "#2a0508"; ctx.fillRect(0, 0, DW, DH); }
-    glass(SIDEBAR, 34); glass(APPS, 34, "rgba(224,36,44,.4)"); glass(CLOCK, 26); glass(MUSIC, 26);
+    glass(SIDEBAR, 34); glass(APPS, 34, APPS_TINT); glass(CLOCK, 26); glass(MUSIC, 26);
     sidebar(); appsButton(); clock(); music();
     for (var i = 0; i < 5; i++) tile(i);
   }
