@@ -85,9 +85,25 @@ public class HomeView extends View {
     static final float SPEED_SIZE = 150f, SPEED_Y = 318f, MPH_SIZE = 34f, MPH_Y = 370f;
 
     // ---- glass panel look (0 = invisible, 255 = solid). Lower = more see-through.
-    static final int GLASS_BLUR_ALPHA = 165;   // how much frosted blur covers the wallpaper
-    static final int GLASS_TINT = 0x1FFFE6EA;  // light pink-white wash over the blur
-    static final int GLASS_SHEEN = 0x1AFFFFFF; // highlight at the top of each panel
+    static final int GLASS_BLUR_ALPHA = 185;      // how much frosted blur covers the wallpaper
+    static final float GLASS_SATURATION = 1.35f;  // keeps the wallpaper's colour alive through the glass
+    static final float GLASS_BRIGHTNESS = 1.08f;  // glass lifts what's behind it slightly
+    static final int GLASS_TINT = 0x0FFFFFFF;     // very light wash (was a heavy white blur)
+    static final int GLASS_SHEEN = 0x38FFFFFF;    // diagonal reflection, strongest at the top-left
+    static final int GLASS_SHEEN_MID = 0x0DFFFFFF;
+    static final int GLASS_EDGE_LIT = 0xA6FFFFFF; // rim catching the light at the top-left...
+    static final int GLASS_EDGE_DIM = 0x1AFFFFFF; // ...fading toward the bottom-right
+    static final int GLASS_SHADE = 0x2E000000;    // darker inner edge along the bottom, for thickness
+    static final android.graphics.ColorMatrixColorFilter GLASS_FILTER = glassFilter();
+
+    private static android.graphics.ColorMatrixColorFilter glassFilter() {
+        android.graphics.ColorMatrix cm = new android.graphics.ColorMatrix();
+        cm.setSaturation(GLASS_SATURATION);
+        float b = GLASS_BRIGHTNESS;
+        cm.postConcat(new android.graphics.ColorMatrix(new float[]{
+                b, 0, 0, 0, 0,   0, b, 0, 0, 0,   0, 0, b, 0, 0,   0, 0, 0, 1, 0}));
+        return new android.graphics.ColorMatrixColorFilter(cm);
+    }
     static final int APPS_TINT = 0x4DE0242C;   // red wash on the four-dot button
 
     private final Host host;
@@ -256,7 +272,7 @@ public class HomeView extends View {
         return out;
     }
 
-    /** Frosted-glass panel: blurred wallpaper, a light tint, a top sheen and a thin bright edge. */
+    /** Glass panel: colour-rich blur, a diagonal reflection, a lit rim and a darker bottom edge. */
     private void glass(Canvas c, Path shape, RectF r, int tint) {
         // soft shadow
         p.setStyle(Paint.Style.FILL);
@@ -273,23 +289,31 @@ public class HomeView extends View {
             tmp.set(-offX / scale, -offY / scale, (getWidth() - offX) / scale, (getHeight() - offY) / scale);
             p.setColor(Color.WHITE);
             p.setAlpha(GLASS_BLUR_ALPHA);
+            p.setColorFilter(GLASS_FILTER);
             c.drawBitmap(blur, null, tmp, p);
+            p.setColorFilter(null);
             p.setAlpha(255);
         }
         p.setColor(GLASS_TINT);
         c.drawRect(r, p);
         if (tint != 0) { p.setColor(tint); c.drawRect(r, p); }
-        p.setColor(Color.WHITE); // opaque, so the gradient's own colours decide the look
-        p.setShader(new LinearGradient(0, r.top, 0, r.top + Math.min(220, r.height()),
-                GLASS_SHEEN, 0x00FFFFFF, Shader.TileMode.CLAMP));
+
+        p.setColor(Color.WHITE); // opaque, so each gradient's own colours decide the look
+        float reach = Math.min(r.width(), r.height()) * 0.9f;
+        p.setShader(new LinearGradient(r.left, r.top, r.left + reach, r.top + reach,
+                new int[]{GLASS_SHEEN, GLASS_SHEEN_MID, 0x00FFFFFF}, new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP));
         c.drawRect(r, p);
+        p.setShader(new LinearGradient(0, r.bottom - 34, 0, r.bottom, 0x00000000, GLASS_SHADE, Shader.TileMode.CLAMP));
+        c.drawRect(r.left, r.bottom - 34, r.right, r.bottom, p);
         p.setShader(null);
         c.restore();
 
         p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(2.2f);
-        p.setColor(0x59FFFFFF);
+        p.setStrokeWidth(2.4f);
+        p.setColor(Color.WHITE);
+        p.setShader(new LinearGradient(r.left, r.top, r.right, r.bottom, GLASS_EDGE_LIT, GLASS_EDGE_DIM, Shader.TileMode.CLAMP));
         c.drawPath(shape, p);
+        p.setShader(null);
         p.setStyle(Paint.Style.FILL);
     }
 
