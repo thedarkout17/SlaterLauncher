@@ -10,7 +10,6 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.RadialGradient;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -66,13 +65,16 @@ public class HomeView extends View {
     static final float[] TILE_X = {913f, 1115f, 1322f, 1541f, 1775f};
     static final float TILE_Y = 1017f, TILE_SIZE = 168f;
     static final String[] TILE_SLOTS = {Slots.TILE_LINK, Slots.TILE_VIDEO, Slots.TILE_EQ, Slots.TILE_MUSIC, Slots.TILE_YT};
+    // Tile gradients from the icon mockups: {start, end}. Diagonal top-left -> bottom-right,
+    // except the music tile, which runs left -> right.
     static final int[][] TILE_COLORS = {
-            {0xFF46E6B6, 0xFF1FAA86},
-            {0xFF4DDCEB, 0xFF2A9FDA},
-            {0xFFB772F4, 0xFF7A4BE4},
-            {0xFFF46AA6, 0xFFCF3569},
-            {0xFFF25050, 0xFFC4282B},
+            {0xFFF861B9, 0xFFF88B44},   // Car Link: pink -> orange
+            {0xFF00A874, 0xFF1B6FC0},   // Front Video: green -> blue
+            {0xFF5E00A2, 0xFFEE14D6},   // Equalizer: deep purple -> magenta
+            {0xFF009B98, 0xFF00A350},   // Music: teal -> green
+            {0xFFF51F44, 0xFFF8763C},   // YouTube: red -> orange
     };
+    static final boolean[] TILE_HORIZONTAL = {false, false, false, true, false};
     static final int TEAL = 0xFF45D6B4;
 
     // ---- speed, drawn in the middle of the wallpaper's moon
@@ -576,6 +578,12 @@ public class HomeView extends View {
         return note;
     }
 
+    /** White, no shadow: the new icon set is flat. */
+    private void glyph(float stroke) {
+        white(stroke);
+        p.clearShadowLayer();
+    }
+
     private void drawTile(Canvas c, int i) {
         float cx = TILE_X[i], cy = TILE_Y, half = TILE_SIZE / 2f;
         c.save();
@@ -584,76 +592,71 @@ public class HomeView extends View {
         RectF r = new RectF(cx - half, cy - half, cx + half, cy + half);
         p.setStyle(Paint.Style.FILL);
         p.setShader(null);
-        p.setColor(0x55000000);
+        p.setColor(0x55000000);                       // drop shadow so the tile lifts off the wallpaper
         tmp.set(r.left + 2, r.top + 10, r.right + 2, r.bottom + 12);
         c.drawRoundRect(tmp, 36, 36, p);
-        p.setColor(Color.WHITE); // opaque: the shadow above left the paint at 33% alpha, which faded the tiles
-        p.setShader(new LinearGradient(0, r.top, 0, r.bottom, TILE_COLORS[i][0], TILE_COLORS[i][1], Shader.TileMode.CLAMP));
-        c.drawRoundRect(r, 36, 36, p);
-        p.setShader(new RadialGradient(cx - 30, r.top + 20, TILE_SIZE * 0.8f, 0x40FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+        p.setColor(Color.WHITE);                      // opaque: the gradient's own colours decide the look
+        Shader tile = TILE_HORIZONTAL[i]
+                ? new LinearGradient(r.left, cy, r.right, cy, TILE_COLORS[i][0], TILE_COLORS[i][1], Shader.TileMode.CLAMP)
+                : new LinearGradient(r.left, r.top, r.right, r.bottom, TILE_COLORS[i][0], TILE_COLORS[i][1], Shader.TileMode.CLAMP);
+        p.setShader(tile);
         c.drawRoundRect(r, 36, 36, p);
         p.setShader(null);
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(2);
-        p.setColor(0x40FFFFFF);
-        c.drawRoundRect(r, 36, 36, p);
 
         switch (i) {
-            case 0: { // car link: phone
-                white(7f);
-                tmp.set(cx - 30, cy - 50, cx + 30, cy + 50);
+            case 0: { // Car Link: phone outline
+                glyph(6f);
+                tmp.set(cx - 34, cy - 57, cx + 34, cy + 55);
                 c.drawRoundRect(tmp, 11, 11, p);
-                white(0);
-                p.setColor(0xF2FFFFFF);
-                tmp.set(cx - 18, cy - 36, cx + 18, cy + 14);
-                c.drawRoundRect(tmp, 4, 4, p);
-                for (int k = -1; k <= 1; k++) {
-                    float dx = cx + k * 14, dy = cy + 31;
-                    path.reset();
-                    path.moveTo(dx, dy - 6); path.lineTo(dx + 6, dy); path.lineTo(dx, dy + 6); path.lineTo(dx - 6, dy); path.close();
-                    c.drawPath(path, p);
-                }
                 break;
             }
-            case 1: { // front video: flat camera, no raised top
-                white(0);
-                tmp.set(cx - 52, cy - 36, cx + 52, cy + 38);
-                c.drawRoundRect(tmp, 16, 16, p);
-                p.clearShadowLayer();
-                p.setColor(TILE_COLORS[1][1]);
-                c.drawCircle(cx, cy + 1, 24, p);
-                c.drawCircle(cx + 35, cy - 21, 5, p);   // flash
-                p.setColor(Color.WHITE);
-                c.drawCircle(cx, cy + 1, 13, p);
-                p.setColor(TILE_COLORS[1][1]);
-                c.drawCircle(cx, cy + 1, 6, p);
-                break;
-            }
-            case 2: { // equalizer
-                float[] knob = {12, -18, 18, -6, 10};
-                for (int k = 0; k < 5; k++) {
-                    float x = cx - 48 + k * 24;
-                    white(5f);
-                    c.drawLine(x, cy - 46, x, cy + 46, p);
-                    white(0);
-                    tmp.set(x - 11, cy + knob[k] - 9, x + 11, cy + knob[k] + 9);
-                    c.drawRoundRect(tmp, 8, 8, p);
-                }
-                break;
-            }
-            case 3: { // music note: one combined shape so it gets a single clean shadow
-                white(0);
-                c.drawPath(musicNote(cx, cy), p);
-                break;
-            }
-            case 4: { // play
-                white(0);
+            case 1: { // Front Video: camera; lens and flash are cut-outs showing the tile colour
+                glyph(0);
                 path.reset();
-                path.moveTo(cx - 28, cy - 38);
-                path.lineTo(cx + 42, cy);
-                path.lineTo(cx - 28, cy + 38);
+                path.addRoundRect(new RectF(cx - 59, cy - 32, cx + 58, cy + 46), 11, 11, Path.Direction.CW);
+                Path hump = new Path();
+                hump.addRoundRect(new RectF(cx - 29, cy - 45, cx + 30, cy - 20), 9, 9, Path.Direction.CW);
+                path.op(hump, Path.Op.UNION);
+                c.drawPath(path, p);
+                p.setColor(Color.WHITE);
+                p.setShader(tile);
+                c.drawCircle(cx, cy + 7, 28, p);                  // lens
+                c.drawCircle(cx + 41, cy - 16, 5.5f, p);          // flash
+                p.setShader(null);
+                p.setColor(Color.WHITE);
+                c.drawCircle(cx + 11, cy - 4, 5.5f, p);           // lens highlight
+                break;
+            }
+            case 2: { // Equalizer: four sliders
+                float[] xs = {-47.5f, -16f, 16f, 47.5f};
+                float[] knob = {-7f, 9f, -17f, 20f};
+                for (int k = 0; k < 4; k++) {
+                    float x = cx + xs[k];
+                    glyph(7f);
+                    c.drawLine(x, cy - 46, x, cy + 48, p);
+                    glyph(0);
+                    c.drawCircle(x, cy + knob[k], 10.5f, p);
+                }
+                break;
+            }
+            case 3: { // Music: eighth note
+                glyph(0);
+                c.save();
+                c.scale(1.15f, 1.15f, cx, cy);                    // the mockup's note is a bit larger
+                c.drawPath(musicNote(cx, cy), p);
+                c.restore();
+                break;
+            }
+            case 4: { // YouTube: rounded play triangle
+                glyph(0);
+                p.setPathEffect(new android.graphics.CornerPathEffect(9));
+                path.reset();
+                path.moveTo(cx - 24, cy - 36);
+                path.lineTo(cx + 38, cy);
+                path.lineTo(cx - 24, cy + 36);
                 path.close();
                 c.drawPath(path, p);
+                p.setPathEffect(null);
                 break;
             }
         }

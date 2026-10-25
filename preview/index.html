@@ -136,7 +136,9 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var PROG_Y = 917, PROG_X0 = 335, PROG_X1 = 740, CTRL_Y = 1000, CTRL_X = [388, 537, 685];
   var TILE_X = [913, 1115, 1322, 1541, 1775], TILE_Y = 1017, TILE = 168;
   var TILE_NAMES = ["Car Link 2.0", "Front Video", "Equalizer", "Music Player", "YouTube"];
-  var TILE_COLORS = [["#46E6B6", "#1FAA86"], ["#4DDCEB", "#2A9FDA"], ["#B772F4", "#7A4BE4"], ["#F46AA6", "#CF3569"], ["#F25050", "#C4282B"]];
+  // Tile gradients from the icon mockups (same as HomeView.java). Diagonal, except music (left -> right).
+  var TILE_COLORS = [["#F861B9", "#F88B44"], ["#00A874", "#1B6FC0"], ["#5E00A2", "#EE14D6"], ["#009B98", "#00A350"], ["#F51F44", "#F8763C"]];
+  var TILE_HORIZONTAL = [false, false, false, true, false];
   var TEAL = "#45D6B4";
   // speed in the moon (same numbers as HomeView.java)
   var SPEED_GLOW = "#ff1e46", SPEED_GLOW_RADIUS = 30, SPEED_GLOW_PASSES = 3;
@@ -319,43 +321,45 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     noShadow();
   }
 
+  function glyph(stroke) { white(stroke); noShadow(); }
+
   function tile(i) {
     var cx = TILE_X[i], cy = TILE_Y, h = TILE / 2, r = [cx - h, cy - h, cx + h, cy + h];
     ctx.save(); pressScale("tile" + i, cx, cy);
     ctx.fillStyle = "rgba(0,0,0,.33)"; rr([r[0] + 2, r[1] + 10, r[2] + 2, r[3] + 12], 36); ctx.fill();
-    var g = ctx.createLinearGradient(0, r[1], 0, r[3]); g.addColorStop(0, TILE_COLORS[i][0]); g.addColorStop(1, TILE_COLORS[i][1]);
+    var g = TILE_HORIZONTAL[i] ? ctx.createLinearGradient(r[0], cy, r[2], cy) : ctx.createLinearGradient(r[0], r[1], r[2], r[3]);
+    g.addColorStop(0, TILE_COLORS[i][0]); g.addColorStop(1, TILE_COLORS[i][1]);
     ctx.fillStyle = g; rr(r, 36); ctx.fill();
-    var rg = ctx.createRadialGradient(cx - 30, r[1] + 20, 0, cx - 30, r[1] + 20, TILE * .8);
-    rg.addColorStop(0, "rgba(255,255,255,.25)"); rg.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = rg; rr(r, 36); ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.25)"; rr(r, 36); ctx.stroke();
 
-    if (i === 0) {
-      white(7); rr([cx - 30, cy - 50, cx + 30, cy + 50], 11); ctx.stroke(); white(); ctx.fillStyle = "rgba(255,255,255,.95)";
-      rr([cx - 18, cy - 36, cx + 18, cy + 14], 4); ctx.fill();
-      for (var k = -1; k <= 1; k++) { var dx = cx + k * 14, dy = cy + 31; ctx.beginPath(); ctx.moveTo(dx, dy - 6); ctx.lineTo(dx + 6, dy); ctx.lineTo(dx, dy + 6); ctx.lineTo(dx - 6, dy); ctx.fill(); }
-    } else if (i === 1) {
-      // flat camera, no raised top
-      white(); rr([cx - 52, cy - 36, cx + 52, cy + 38], 16); ctx.fill(); noShadow();
-      ctx.fillStyle = TILE_COLORS[1][1];
-      ctx.beginPath(); ctx.arc(cx, cy + 1, 24, 0, 7); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx + 35, cy - 21, 5, 0, 7); ctx.fill();
-      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx, cy + 1, 13, 0, 7); ctx.fill();
-      ctx.fillStyle = TILE_COLORS[1][1]; ctx.beginPath(); ctx.arc(cx, cy + 1, 6, 0, 7); ctx.fill();
-    } else if (i === 2) {
-      var knob = [12, -18, 18, -6, 10];
-      for (var j = 0; j < 5; j++) { var x = cx - 48 + j * 24; white(5); ctx.beginPath(); ctx.moveTo(x, cy - 46); ctx.lineTo(x, cy + 46); ctx.stroke(); white(); rr([x - 11, cy + knob[j] - 9, x + 11, cy + knob[j] + 9], 8); ctx.fill(); }
-    } else if (i === 3) {
-      // eighth note as one path (head, stem, flag) so it gets a single clean shadow
-      white(); var n = new Path2D();
+    if (i === 0) {            // Car Link: phone outline
+      glyph(6); rr([cx - 34, cy - 57, cx + 34, cy + 55], 11); ctx.stroke();
+    } else if (i === 1) {     // Front Video: camera, lens and flash cut out to the tile colour
+      glyph(); rr([cx - 59, cy - 32, cx + 58, cy + 46], 11); ctx.fill(); rr([cx - 29, cy - 45, cx + 30, cy - 20], 9); ctx.fill();
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy + 7, 28, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 41, cy - 16, 5.5, 0, 7); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx + 11, cy - 4, 5.5, 0, 7); ctx.fill();
+    } else if (i === 2) {     // Equalizer: four sliders
+      var xs = [-47.5, -16, 16, 47.5], knob = [-7, 9, -17, 20];
+      for (var k = 0; k < 4; k++) {
+        var x = cx + xs[k];
+        glyph(7); ctx.beginPath(); ctx.moveTo(x, cy - 46); ctx.lineTo(x, cy + 48); ctx.stroke();
+        glyph(); ctx.beginPath(); ctx.arc(x, cy + knob[k], 10.5, 0, 7); ctx.fill();
+      }
+    } else if (i === 3) {     // Music: eighth note, 15% larger like the mockup
+      glyph(); ctx.save(); ctx.translate(cx, cy); ctx.scale(1.15, 1.15); ctx.translate(-cx, -cy);
+      var n = new Path2D();
       n.ellipse(cx - 14, cy + 30, 23, 17, -22 * Math.PI / 180, 0, Math.PI * 2);
       n.rect(cx, cy - 52, 9, 80);
       n.moveTo(cx + 9, cy - 52);
       n.bezierCurveTo(cx + 12, cy - 34, cx + 40, cy - 30, cx + 36, cy - 2);
       n.bezierCurveTo(cx + 34, cy - 18, cx + 22, cy - 22, cx + 9, cy - 26);
       n.closePath();
-      ctx.fill(n, "nonzero");
-    } else {
-      white(); ctx.beginPath(); ctx.moveTo(cx - 28, cy - 38); ctx.lineTo(cx + 42, cy); ctx.lineTo(cx - 28, cy + 38); ctx.fill();
+      ctx.fill(n, "nonzero"); ctx.restore();
+    } else {                  // YouTube: rounded play triangle
+      glyph(); ctx.lineJoin = "round"; ctx.lineWidth = 12;
+      ctx.beginPath(); ctx.moveTo(cx - 21, cy - 31); ctx.lineTo(cx + 32, cy); ctx.lineTo(cx - 21, cy + 31); ctx.closePath();
+      ctx.fill(); ctx.stroke();
     }
     noShadow(); ctx.restore();
   }
