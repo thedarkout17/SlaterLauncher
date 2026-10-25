@@ -181,6 +181,16 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
         if (home != null) home.postInvalidate();
     }
 
+    /** Long-press on the car: only the wrap option. A photo wallpaper has no car, so show the normal menu. */
+    @Override public void onCarLongPress() {
+        if (new File(getFilesDir(), "wallpaper.jpg").exists()) { onBackgroundLongPress(); return; }
+        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setItems(new String[]{"Apply Wrap"}, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) { pickCarColor(); }
+                })
+                .show();
+    }
+
     @Override public void onSpeedTap() {
         if (!speed.hasPermission()) {
             requestLocation();
@@ -247,30 +257,29 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     }
 
     @Override public void onBackgroundLongPress() {
-        String[] items = {"Change car color", "Change wallpaper", "Use the default wallpaper", "Show song info (music access)",
+        String[] items = {"Change wallpaper", "Use the default wallpaper", "Show song info (music access)",
                 "Android settings", "Choose a different home app", "Make this my home screen"};
         new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
                 .setTitle("Redline Launcher")
                 .setItems(items, new DialogInterface.OnClickListener() {
                     @Override public void onClick(DialogInterface d, int which) {
                         switch (which) {
-                            case 0: pickCarColor(); break;
-                            case 1: pickWallpaper(); break;
-                            case 2:
+                            case 0: pickWallpaper(); break;
+                            case 1:
                                 new File(getFilesDir(), "wallpaper.jpg").delete();
                                 applyWallpaper(loadWallpaper());
                                 break;
-                            case 3: media.openAccessSettings(); break;
-                            case 4:
+                            case 2: media.openAccessSettings(); break;
+                            case 3:
                                 Slots.start(MainActivity.this, new Intent(Settings.ACTION_SETTINGS)
                                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                                 break;
-                            case 5:
+                            case 4:
                                 Intent hi = new Intent(Settings.ACTION_HOME_SETTINGS);
                                 if (!Slots.start(MainActivity.this, hi))
                                     Slots.start(MainActivity.this, new Intent(Settings.ACTION_SETTINGS));
                                 break;
-                            case 6:
+                            case 5:
                                 getSharedPreferences("app", MODE_PRIVATE).edit().remove("neverAskHome").apply();
                                 if (isDefaultHome()) Toast.makeText(MainActivity.this,
                                         "Redline Launcher is already your home screen", Toast.LENGTH_SHORT).show();
@@ -349,7 +358,7 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     /** Ask which colour car to show, then switch to that version of the wallpaper. */
     private void pickCarColor() {
         new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
-                .setTitle("Change car color")
+                .setTitle("Apply Wrap")
                 .setSingleChoiceItems(CAR_COLORS, carColor(), new DialogInterface.OnClickListener() {
                     @Override public void onClick(DialogInterface d, int which) {
                         getSharedPreferences("app", MODE_PRIVATE).edit().putInt("carColor", which).apply();

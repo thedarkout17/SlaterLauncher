@@ -40,6 +40,7 @@ public class HomeView extends View {
         void onBackgroundLongPress();
         void onMusicInfoTap();
         void onSpeedTap();
+        void onCarLongPress();
     }
 
     static final float DW = 2000f, DH = 1200f;
@@ -79,6 +80,8 @@ public class HomeView extends View {
 
     // ---- speed, drawn in the middle of the wallpaper's moon
     static final float MOON_CX = 980f, MOON_CY = 282f, MOON_R = 168f;
+    // where the car sits in the wallpaper (long-press here for Apply Wrap)
+    static final RectF CAR = new RectF(905, 420, 1880, 820);
     static final int SPEED_GLOW = 0xFFFF1E46;   // red outer glow around the speed
     static final float SPEED_GLOW_RADIUS = 30f;
     static final int SPEED_GLOW_PASSES = 3;      // more passes = brighter glow
@@ -137,6 +140,7 @@ public class HomeView extends View {
             pressed = null;
             invalidate();
             if (id == null || id.equals("bg")) host.onBackgroundLongPress();
+            else if (id.equals("car")) host.onCarLongPress();
             else if (id.startsWith("side_") || id.startsWith("tile_")) host.onSlotLongPress(id);
             else host.onBackgroundLongPress();
         }
@@ -705,6 +709,7 @@ public class HomeView extends View {
         }
         if (CLOCK.contains(x, y)) return "clock";
         if (dist(x, y, MOON_CX, MOON_CY) < MOON_R) return "speed";
+        if (CAR.contains(x, y)) return "car";
         return "bg";
     }
 

@@ -142,6 +142,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var TEAL = "#45D6B4";
   // speed in the moon (same numbers as HomeView.java)
   var SPEED_GLOW = "#ff1e46", SPEED_GLOW_RADIUS = 30, SPEED_GLOW_PASSES = 3;
+  var CAR = [905, 420, 1880, 820]; // where the car sits in the wallpaper (long-press for Apply Wrap)
   var MOON_CX = 980, MOON_CY = 282, MOON_R = 168, SPEED_SIZE = 150, SPEED_Y = 318, MPH_SIZE = 34, MPH_Y = 370;
   // glass panel look, same values as HomeView.java (0 = invisible, 1 = solid)
   var GLASS_BLUR_ALPHA = 185 / 255, GLASS_FILTER = "saturate(1.35) brightness(1.08)", GLASS_TINT = "rgba(255,255,255,.06)",
@@ -403,6 +404,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     }
     if (x >= CLOCK[0] && x <= CLOCK[2] && y >= CLOCK[1] && y <= CLOCK[3]) return "clock";
     if (Math.hypot(x - MOON_CX, y - MOON_CY) < MOON_R) return "speed";
+    if (x >= CAR[0] && x <= CAR[2] && y >= CAR[1] && y <= CAR[3]) return "car";
     return "bg";
   }
   function toDesign(e) { var b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * DW, (e.clientY - b.top) / b.height * DH]; }
@@ -452,6 +454,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   }
   function longPress(id) {
     if (id && (id.indexOf("tile") === 0 || id.indexOf("side") === 0)) pickApp(id);
+    else if (id === "car") openSheet("", [{ label: "Apply Wrap", run: pickCarColor }]);
     else bgMenu();
   }
 
@@ -461,7 +464,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function openSheet(title, items) {
     sheet.innerHTML = "";
     var box = document.createElement("div"); box.className = "box"; box.setAttribute("role", "dialog");
-    var h = document.createElement("h2"); h.textContent = title; box.appendChild(h);
+    if (title) { var h = document.createElement("h2"); h.textContent = title; box.appendChild(h); }
     items.forEach(function (it) {
       var b = document.createElement("button"); b.type = "button";
       if (it.color) { var d = document.createElement("span"); d.className = "dot"; d.style.background = it.color; b.appendChild(d); }
@@ -480,13 +483,12 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     openSheet("Choose app for the " + slotTitle(id), items);
   }
   function pickCarColor() {
-    openSheet("Change car color", CAR_COLORS.map(function (c, i) {
+    openSheet("Apply Wrap", CAR_COLORS.map(function (c, i) {
       return { label: c[0] + (i === carColor ? "  ✓" : ""), color: c[2], run: function () { setCarColor(i); toast("Car color: " + c[0]); } };
     }));
   }
   function bgMenu() {
     openSheet("Redline Launcher", [
-      { label: "Change car color", run: pickCarColor },
       { label: "Change wallpaper", run: function () { toast("Opens your gallery to pick a wallpaper"); } },
       { label: "Use the default wallpaper", run: function () { toast("Wallpaper reset"); } },
       { label: "Show song info (music access)", run: function () { toast("Opens notification access settings"); } },
