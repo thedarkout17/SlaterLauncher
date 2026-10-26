@@ -88,15 +88,20 @@ public class HomeView extends View {
     static final float SPEED_SIZE = 150f, SPEED_Y = 318f, MPH_SIZE = 34f, MPH_Y = 370f;
 
     // ---- glass panel look (0 = invisible, 255 = solid). Lower = more see-through.
-    static final int GLASS_BLUR_ALPHA = 185;      // how much frosted blur covers the wallpaper
-    static final float GLASS_SATURATION = 1.35f;  // keeps the wallpaper's colour alive through the glass
-    static final float GLASS_BRIGHTNESS = 1.08f;  // glass lifts what's behind it slightly
-    static final int GLASS_TINT = 0x0FFFFFFF;     // very light wash (was a heavy white blur)
-    static final int GLASS_SHEEN = 0x38FFFFFF;    // diagonal reflection, strongest at the top-left
-    static final int GLASS_SHEEN_MID = 0x0DFFFFFF;
-    static final int GLASS_EDGE_LIT = 0xA6FFFFFF; // rim catching the light at the top-left...
-    static final int GLASS_EDGE_DIM = 0x1AFFFFFF; // ...fading toward the bottom-right
-    static final int GLASS_SHADE = 0x2E000000;    // darker inner edge along the bottom, for thickness
+    // ---- Apple-style glass (same numbers as preview/index.html)
+    static final int GLASS_BLUR_DOWNSCALE = 5;     // light, smooth blur: clear, not foggy
+    static final float GLASS_SATURATION = 1.1f;    // close to neutral...
+    static final float GLASS_BRIGHTNESS = 0.9f;    // ...and slightly dimmed so white text stays crisp
+    static final int GLASS_TINT = 0x12FFFFFF;      // faint luminous lift, like real glass
+    static final float GLASS_RADIUS = 40f;         // larger, softer corners
+    static final float LENS_BAND = 22f, LENS_ZOOM = 1.08f; // edge refraction: the rim magnifies what's behind...
+    static final int LENS_STEPS = 3;               // ...easing to none toward the middle
+    static final float RIM_WIDTH = 1.8f, RIM_GLOW = 9f;   // crisp specular rim + soft inner glow
+    static final int SHADOW = 0x61000000;          // soft floating shadow
+    static final float SHADOW_BLUR = 22f, SHADOW_Y = 14f;
+    // rim brightness around the panel, clockwise from 3 o'clock: bright at bottom-right and top-left
+    static final float[] RIM_POS = {0f, .125f, .25f, .5f, .625f, .75f, 1f};
+    static final float[] RIM_ALPHA = {.30f, .85f, .18f, .22f, 1f, .22f, .30f};
     static final android.graphics.ColorMatrixColorFilter GLASS_FILTER = glassFilter();
 
     private static android.graphics.ColorMatrixColorFilter glassFilter() {
@@ -107,13 +112,16 @@ public class HomeView extends View {
                 b, 0, 0, 0, 0,   0, b, 0, 0, 0,   0, 0, b, 0, 0,   0, 0, 0, 1, 0}));
         return new android.graphics.ColorMatrixColorFilter(cm);
     }
-    static final int APPS_TINT = 0x4DE0242C;   // red wash on the four-dot button
+    static final int APPS_TINT = 0x2EE0242C;   // red wash on the four-dot button
 
     private final Host host;
     private final MediaHelper media;
     private final SpeedHelper speed;
 
-    private Bitmap wallpaper, wallScaled, blur;
+    private Bitmap wallpaper, wallScaled, blur, blurLight;
+    private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Matrix lensMatrix = new Matrix();
+    private final Path lensPath = new Path();
     private float scale = 1f, offX, offY;
 
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -198,6 +206,9 @@ public class HomeView extends View {
         if (scaled != wallScaled && scaled != wallpaper) scaled.recycle();
         Bitmap small = Bitmap.createScaledBitmap(wallScaled, Math.max(1, w / 12), Math.max(1, h / 12), true);
         blur = boxBlur(boxBlur(small, 3), 3);
+        Bitmap light = Bitmap.createScaledBitmap(wallScaled, Math.max(1, w / GLASS_BLUR_DOWNSCALE),
+                Math.max(1, h / GLASS_BLUR_DOWNSCALE), true);
+        blurLight = boxBlur(boxBlur(light, 3), 3);
     }
 
     static Bitmap boxBlur(Bitmap src, int r) {
@@ -239,8 +250,8 @@ public class HomeView extends View {
 
         glass(c, roundedPolygon(SIDEBAR_SHAPE, BEVEL_RADIUS), SIDEBAR, 0);
         glass(c, roundedPolygon(APPS_SHAPE, BEVEL_RADIUS), APPS, APPS_TINT);
-        glass(c, roundRect(CLOCK, 26), CLOCK, 0);
-        glass(c, roundRect(MUSIC, 26), MUSIC, 0);
+        glass(c, roundRect(CLOCK, GLASS_RADIUS), CLOCK, 0);
+        glass(c, roundRect(MUSIC, GLASS_RADIUS), MUSIC, 0);
 
         drawSidebar(c);
         drawAppsButton(c);
@@ -276,46 +287,68 @@ public class HomeView extends View {
         return out;
     }
 
-    /** Glass panel: colour-rich blur, a diagonal reflection, a lit rim and a darker bottom edge. */
+    private static Shader rimShader(RectF r, float alphaScale) {
+        int[] cols = new int[RIM_ALPHA.length];
+        for (int i = 0; i < cols.length; i++) cols[i] = (Math.round(255 * Math.min(1f, RIM_ALPHA[i] * alphaScale)) << 24) | 0xFFFFFF;
+        return new android.graphics.SweepGradient(r.centerX(), r.centerY(), cols, RIM_POS);
+    }
+
+    /** Apple-style glass: clear light blur, refraction along the edges, specular rim, soft floating shadow. */
     private void glass(Canvas c, Path shape, RectF r, int tint) {
-        // soft shadow
-        p.setStyle(Paint.Style.FILL);
-        p.setShader(null);
-        p.setColor(0x33000000);
+        float cx = r.centerX(), cy = r.centerY(), w = r.width(), h = r.height();
+        Bitmap bg = blurLight != null ? blurLight : blur;
+
+        // shadow (the glass body drawn over it is opaque, so it only shows outside)
+        if (shadowPaint.getMaskFilter() == null)
+            shadowPaint.setMaskFilter(new android.graphics.BlurMaskFilter(SHADOW_BLUR, android.graphics.BlurMaskFilter.Blur.NORMAL));
+        shadowPaint.setColor(SHADOW);
         c.save();
-        c.translate(4, 8);
-        c.drawPath(shape, p);
+        c.translate(0, SHADOW_Y);
+        c.drawPath(shape, shadowPaint);
         c.restore();
 
         c.save();
         c.clipPath(shape);
-        if (blur != null) {
+        if (bg != null) {
             tmp.set(-offX / scale, -offY / scale, (getWidth() - offX) / scale, (getHeight() - offY) / scale);
+            p.setShader(null);
             p.setColor(Color.WHITE);
-            p.setAlpha(GLASS_BLUR_ALPHA);
             p.setColorFilter(GLASS_FILTER);
-            c.drawBitmap(blur, null, tmp, p);
+            // edge refraction: nested copies of the shape, each a little smaller and less magnified,
+            // so the bend is strongest at the rim and fades to none in the middle
+            for (int k = 0; k <= LENS_STEPS; k++) {
+                float inset = LENS_BAND * k / LENS_STEPS;
+                float zoom = 1f + (LENS_ZOOM - 1f) * (1f - k / (float) LENS_STEPS);
+                c.save();
+                if (k > 0) {
+                    lensMatrix.setScale((w - 2 * inset) / w, (h - 2 * inset) / h, cx, cy);
+                    shape.transform(lensMatrix, lensPath);
+                    c.clipPath(lensPath);
+                }
+                c.scale(zoom, zoom, cx, cy);
+                c.drawBitmap(bg, null, tmp, p);
+                c.restore();
+            }
             p.setColorFilter(null);
-            p.setAlpha(255);
         }
         p.setColor(GLASS_TINT);
         c.drawRect(r, p);
         if (tint != 0) { p.setColor(tint); c.drawRect(r, p); }
-
-        p.setColor(Color.WHITE); // opaque, so each gradient's own colours decide the look
-        float reach = Math.min(r.width(), r.height()) * 0.9f;
-        p.setShader(new LinearGradient(r.left, r.top, r.left + reach, r.top + reach,
-                new int[]{GLASS_SHEEN, GLASS_SHEEN_MID, 0x00FFFFFF}, new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP));
+        // faint light from above
+        p.setColor(Color.WHITE);
+        p.setShader(new LinearGradient(0, r.top, 0, r.top + Math.min(160, h * .5f), 0x1AFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
         c.drawRect(r, p);
-        p.setShader(new LinearGradient(0, r.bottom - 34, 0, r.bottom, 0x00000000, GLASS_SHADE, Shader.TileMode.CLAMP));
-        c.drawRect(r.left, r.bottom - 34, r.right, r.bottom, p);
+        // soft inner glow along the rim
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(RIM_GLOW * 2);
+        p.setShader(rimShader(r, .22f));
+        c.drawPath(shape, p);
         p.setShader(null);
         c.restore();
 
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(2.4f);
-        p.setColor(Color.WHITE);
-        p.setShader(new LinearGradient(r.left, r.top, r.right, r.bottom, GLASS_EDGE_LIT, GLASS_EDGE_DIM, Shader.TileMode.CLAMP));
+        // crisp specular rim
+        p.setStrokeWidth(RIM_WIDTH);
+        p.setShader(rimShader(r, 1f));
         c.drawPath(shape, p);
         p.setShader(null);
         p.setStyle(Paint.Style.FILL);

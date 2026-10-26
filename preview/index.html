@@ -145,10 +145,18 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var CAR = [905, 420, 1880, 820]; // where the car sits in the wallpaper (long-press for Apply Wrap)
   var MOON_CX = 980, MOON_CY = 282, MOON_R = 168, SPEED_SIZE = 150, SPEED_Y = 318, MPH_SIZE = 34, MPH_Y = 370;
   // glass panel look, same values as HomeView.java (0 = invisible, 1 = solid)
-  var GLASS_BLUR_ALPHA = 185 / 255, GLASS_FILTER = "saturate(1.35) brightness(1.08)", GLASS_TINT = "rgba(255,255,255,.06)",
-    GLASS_SHEEN = "rgba(255,255,255,.22)", GLASS_SHEEN_MID = "rgba(255,255,255,.05)",
-    GLASS_EDGE_LIT = "rgba(255,255,255,.65)", GLASS_EDGE_DIM = "rgba(255,255,255,.10)", GLASS_SHADE = "rgba(0,0,0,.18)",
-    APPS_TINT = "rgba(224,36,44,.3)";
+  // Apple-style glass (same numbers as HomeView.java)
+  var GLASS_BLUR_DOWNSCALE = 5, GLASS_BLUR_PX = 3,            // light, smooth blur: clear, not foggy
+      GLASS_FILTER = "saturate(1.1) brightness(.9)",           // close to neutral, slightly dimmed for crisp text
+      GLASS_TINT = "rgba(255,255,255,.07)",                    // faint luminous lift, like real glass
+      GLASS_RADIUS = 40,                                       // larger, softer corners
+      LENS_BAND = 22, LENS_ZOOM = 1.08, LENS_STEPS = 3,        // edge refraction: the rim magnifies what's behind, easing to none inside
+      RIM_WIDTH = 1.8, RIM_GLOW = 9,                           // crisp specular rim + soft inner glow
+      SHADOW = "rgba(0,0,0,.38)", SHADOW_BLUR = 34, SHADOW_Y = 14,
+      APPS_TINT = "rgba(224,36,44,.18)";
+  var blurLight = null;
+  // rim brightness around the panel, clockwise from 3 o'clock: bright at bottom-right and top-left
+  var RIM_STOPS = [[0, .30], [.125, .85], [.25, .18], [.5, .22], [.625, 1], [.75, .22], [1, .30]];
 
   var FAKE_APPS = [["Car Link 2.0", "#2fbf95"], ["Front Video", "#33a8e0"], ["Equalizer", "#8f5ce9"], ["Music Player", "#e04a86"], ["YouTube", "#d93a3a"],
     ["Maps", "#3c9a5a"], ["Bluetooth", "#2f6fe0"], ["Radio", "#e08a2f"], ["Settings", "#6b6f78"], ["Spotify", "#1db954"],
@@ -166,7 +174,11 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   wall.onload = function () {
     var s = document.createElement("canvas"); s.width = Math.round(DW / 12); s.height = Math.round(DH / 12);
     var sx = s.getContext("2d"); sx.filter = "blur(2.5px)"; sx.drawImage(wall, 0, 0, s.width, s.height);
-    blur = s; draw();
+    blur = s;
+    // lighter blur for the glass panels: the wallpaper stays recognisable through them
+    var l = document.createElement("canvas"); l.width = Math.round(DW / GLASS_BLUR_DOWNSCALE); l.height = Math.round(DH / GLASS_BLUR_DOWNSCALE);
+    var lx = l.getContext("2d"); lx.filter = "blur(" + GLASS_BLUR_PX + "px)"; lx.drawImage(wall, -8, -8, l.width + 16, l.height + 16);
+    blurLight = l; draw();
   };
   // Car colours, same order as MainActivity.CAR_COLORS
   var CAR_COLORS = [["Blue", "wallpaper.jpg", "#1f2f6b"], ["Red", "wallpaper_red.jpg", "#a3161d"]], carColor = 0;
@@ -195,29 +207,59 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   }
 
   // shape(): traces the panel outline as the current path; r: its bounding box
-  // Glass panel: colour-rich blur, a diagonal reflection, a lit rim and a darker bottom edge (same as HomeView.java)
+  function rimGradient(r, alphaScale) {
+    var cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2, g;
+    if (ctx.createConicGradient) {
+      g = ctx.createConicGradient(0, cx, cy);
+      RIM_STOPS.forEach(function (st) { g.addColorStop(st[0], "rgba(255,255,255," + (st[1] * alphaScale) + ")"); });
+    } else {
+      g = ctx.createLinearGradient(r[0], r[1], r[2], r[3]);
+      g.addColorStop(0, "rgba(255,255,255," + alphaScale + ")"); g.addColorStop(.5, "rgba(255,255,255," + (.2 * alphaScale) + ")");
+      g.addColorStop(1, "rgba(255,255,255," + (.8 * alphaScale) + ")");
+    }
+    return g;
+  }
+
+  // Apple-style glass: clear light blur, refraction along the edges, specular rim, soft floating shadow
   function glass(shape, r, tint) {
-    var w = r[2] - r[0], h = r[3] - r[1];
-    ctx.save(); ctx.translate(4, 8); ctx.fillStyle = "rgba(0,0,0,.2)"; shape(); ctx.fill(); ctx.restore();
+    var w = r[2] - r[0], h = r[3] - r[1], cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2;
+    var bg = blurLight || blur;
+    // shadow (the glass body below is opaque, so it only shows outside)
+    ctx.save(); ctx.shadowColor = SHADOW; ctx.shadowBlur = SHADOW_BLUR; ctx.shadowOffsetY = SHADOW_Y;
+    ctx.fillStyle = "#000"; shape(); ctx.fill(); ctx.restore();
+
     ctx.save(); shape(); ctx.clip();
-    if (blur) {
-      ctx.imageSmoothingQuality = "high"; ctx.globalAlpha = GLASS_BLUR_ALPHA; ctx.filter = GLASS_FILTER;
-      ctx.drawImage(blur, 0, 0, DW, DH); ctx.filter = "none"; ctx.globalAlpha = 1;
+    if (bg) {
+      ctx.imageSmoothingQuality = "high"; ctx.filter = GLASS_FILTER;
+      // edge refraction: nested copies of the shape, each a little smaller and a little less magnified,
+      // so the bend is strongest at the rim and fades to none in the middle
+      for (var k = 0; k <= LENS_STEPS; k++) {
+        var inset = LENS_BAND * k / LENS_STEPS, zoom = 1 + (LENS_ZOOM - 1) * (1 - k / LENS_STEPS);
+        ctx.save();
+        if (k > 0) {
+          var T = ctx.getTransform();
+          ctx.translate(cx, cy); ctx.scale((w - 2 * inset) / w, (h - 2 * inset) / h); ctx.translate(-cx, -cy);
+          shape(); ctx.setTransform(T); ctx.clip();
+        }
+        ctx.translate(cx, cy); ctx.scale(zoom, zoom); ctx.translate(-cx, -cy);
+        ctx.drawImage(bg, 0, 0, DW, DH);
+        ctx.restore();
+      }
+      ctx.filter = "none";
     }
     ctx.fillStyle = GLASS_TINT; ctx.fillRect(r[0], r[1], w, h);
     if (tint) { ctx.fillStyle = tint; ctx.fillRect(r[0], r[1], w, h); }
-    var reach = Math.min(w, h) * 0.9;
-    var g = ctx.createLinearGradient(r[0], r[1], r[0] + reach, r[1] + reach);
-    g.addColorStop(0, GLASS_SHEEN); g.addColorStop(0.45, GLASS_SHEEN_MID); g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g; ctx.fillRect(r[0], r[1], w, h);
-    var sh = ctx.createLinearGradient(0, r[3] - 34, 0, r[3]);
-    sh.addColorStop(0, "rgba(0,0,0,0)"); sh.addColorStop(1, GLASS_SHADE);
-    ctx.fillStyle = sh; ctx.fillRect(r[0], r[3] - 34, w, 34);
+    // faint light from above
+    var top = ctx.createLinearGradient(0, r[1], 0, r[1] + Math.min(160, h * .5));
+    top.addColorStop(0, "rgba(255,255,255,.10)"); top.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = top; ctx.fillRect(r[0], r[1], w, h);
+    // soft inner glow along the rim
+    ctx.lineWidth = RIM_GLOW * 2; ctx.strokeStyle = rimGradient(r, .22); shape(); ctx.stroke();
     ctx.restore();
-    var e = ctx.createLinearGradient(r[0], r[1], r[2], r[3]);
-    e.addColorStop(0, GLASS_EDGE_LIT); e.addColorStop(1, GLASS_EDGE_DIM);
-    ctx.save(); shape(); ctx.lineWidth = 2.4; ctx.strokeStyle = e; ctx.stroke(); ctx.restore();
+    // crisp specular rim
+    ctx.save(); ctx.lineWidth = RIM_WIDTH; ctx.strokeStyle = rimGradient(r, 1); shape(); ctx.stroke(); ctx.restore();
   }
+
 
 
   function white(stroke) {
@@ -385,7 +427,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     if (wall.complete && wall.naturalWidth) ctx.drawImage(wall, 0, 0, DW, DH); else { ctx.fillStyle = "#2a0508"; ctx.fillRect(0, 0, DW, DH); }
     speedReadout();
     glass(function () { roundedPolygon(SIDEBAR_SHAPE, BEVEL_RADIUS); }, SIDEBAR); glass(function () { roundedPolygon(APPS_SHAPE, BEVEL_RADIUS); }, APPS, APPS_TINT);
-    glass(function () { rr(CLOCK, 26); }, CLOCK); glass(function () { rr(MUSIC, 26); }, MUSIC);
+    glass(function () { rr(CLOCK, GLASS_RADIUS); }, CLOCK); glass(function () { rr(MUSIC, GLASS_RADIUS); }, MUSIC);
     sidebar(); appsButton(); clock(); music();
     for (var i = 0; i < 5; i++) tile(i);
   }
