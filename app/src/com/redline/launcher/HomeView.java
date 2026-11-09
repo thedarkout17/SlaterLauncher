@@ -41,6 +41,9 @@ public class HomeView extends View {
         void onMusicInfoTap();
         void onSpeedTap();
         void onCarLongPress();
+        /** Finger dragging left across the home screen (dx < 0, screen px): slide the apps page in. */
+        void onHomeSwipe(float dxPx);
+        void onHomeSwipeEnd(float dxPx, float velocityPx);
     }
 
     static final float DW = 2000f, DH = 1200f;
@@ -138,7 +141,8 @@ public class HomeView extends View {
 
     private String pressed;          // id of the element under the finger
     private float downX, downY;
-    private boolean longFired, seeking;
+    private boolean longFired, seeking, swiping;
+    private android.view.VelocityTracker vt;
     private final int slop;
     private final Runnable longPress = new Runnable() {
         @Override public void run() {
@@ -761,6 +765,10 @@ public class HomeView extends View {
             case MotionEvent.ACTION_DOWN:
                 downX = e.getX(); downY = e.getY();
                 longFired = false;
+                swiping = false;
+                if (vt != null) vt.recycle();
+                vt = android.view.VelocityTracker.obtain();
+                vt.addMovement(e);
                 pressed = hit(d.x, d.y);
                 if ("seek".equals(pressed) && media.duration() > 0) {
                     seeking = true;
@@ -770,7 +778,20 @@ public class HomeView extends View {
                 invalidate();
                 return true;
             case MotionEvent.ACTION_MOVE:
+                if (vt != null) vt.addMovement(e);
                 if (seeking) { invalidate(); return true; }
+                if (!swiping) {
+                    float sdx = e.getX() - downX, sdy = e.getY() - downY;
+                    // a clear sideways drag to the left, from anywhere, pulls in the apps page (like CarPlay)
+                    if (sdx < -2 * slop && Math.abs(sdx) > 1.5f * Math.abs(sdy)) {
+                        swiping = true;
+                        handler.removeCallbacks(longPress);
+                        pressed = null;
+                        downX = e.getX();       // start from here so the page doesn't jump
+                        invalidate();
+                    }
+                }
+                if (swiping) { host.onHomeSwipe(Math.min(0, e.getX() - downX)); return true; }
                 if (Math.abs(e.getX() - downX) > slop || Math.abs(e.getY() - downY) > slop) {
                     handler.removeCallbacks(longPress);
                     if (pressed != null && !pressed.equals(hit(d.x, d.y))) { pressed = null; invalidate(); }
@@ -778,7 +799,12 @@ public class HomeView extends View {
                 return true;
             case MotionEvent.ACTION_UP:
                 handler.removeCallbacks(longPress);
-                if (seeking) {
+                if (swiping) {
+                    float v = 0;
+                    if (vt != null) { vt.addMovement(e); vt.computeCurrentVelocity(1000); v = vt.getXVelocity(); }
+                    host.onHomeSwipeEnd(Math.min(0, e.getX() - downX), v);
+                    swiping = false;
+                } else if (seeking) {
                     seeking = false;
                     float f = Math.max(0, Math.min(1, (d.x - PROG_X0) / (PROG_X1 - PROG_X0)));
                     media.seekTo((long) (f * media.duration()));
@@ -791,6 +817,7 @@ public class HomeView extends View {
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 handler.removeCallbacks(longPress);
+                if (swiping) { host.onHomeSwipeEnd(0, 0); swiping = false; }
                 seeking = false;
                 pressed = null;
                 invalidate();

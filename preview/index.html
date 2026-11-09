@@ -56,36 +56,28 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 }
 .sheet button:hover, .sheet button:focus-visible { background: #ffffff10; outline: none; }
 .sheet .dot { width: 1.6em; height: 1.6em; border-radius: .45em; flex: none; }
-/* App drawer: same numbers as DrawerView.java, in design px times --s (screen width / 2000) */
+/* Apps page: same numbers as AppsPageView.java, in design px times --s (screen width / 2000) */
 .screen { --s: .5; }
-.drawer { position: absolute; inset: 0; overflow: hidden; color: #fff; font-family: Roboto, system-ui, sans-serif; opacity: 0; transition: opacity .22s ease; }
-.drawer.open { opacity: 1; }
-.drawer .dbg { position: absolute; inset: calc(var(--s) * -80px); background: var(--wall, url("wallpaper.jpg")) center / cover; filter: blur(calc(var(--s) * 34px)) saturate(1.1); }
-.drawer .dtint { position: absolute; inset: 0; background:
+#c { will-change: transform; }
+.apps { position: absolute; inset: 0; overflow: hidden; color: #fff; font-family: Roboto, system-ui, sans-serif; transform: translateX(100%); will-change: transform; touch-action: none; user-select: none; -webkit-user-select: none; }
+.apps .dbg { position: absolute; inset: calc(var(--s) * -80px); background: var(--wall, url("wallpaper.jpg")) center / cover; filter: blur(calc(var(--s) * 34px)) saturate(1.1); }
+.apps .dtint { position: absolute; inset: 0; background:
   linear-gradient(180deg, rgba(0,0,0,.35) 0, rgba(0,0,0,0) calc(var(--s) * 320px)),
   linear-gradient(0deg, rgba(0,0,0,.3) 0, rgba(0,0,0,0) calc(var(--s) * 260px)),
   rgba(18,3,10,.42); }
-.drawer .dhead { position: absolute; left: calc(var(--s) * 130px); right: calc(var(--s) * 130px); top: calc(var(--s) * 70px); display: flex; justify-content: space-between; align-items: flex-start; transform: translateY(calc(var(--s) * -20px)); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
-.drawer.open .dhead { transform: none; }
-.drawer .dtitle { font-weight: 500; font-size: calc(var(--s) * 64px); line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
-.drawer .dcount { font-size: calc(var(--s) * 27px); letter-spacing: .08em; color: rgba(255,255,255,.7); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
-.drawer .dline { position: absolute; left: calc(var(--s) * 130px); right: calc(var(--s) * 130px); top: calc(var(--s) * 234px); height: max(1px, calc(var(--s) * 1.5px)); background: rgba(255,255,255,.15); }
-.drawer .dgrid { position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--s) * 240px); overflow-y: auto; scrollbar-width: none;
-  display: grid; grid-template-columns: repeat(6, 1fr); column-gap: calc(var(--s) * 24px); row-gap: calc(var(--s) * 46px); align-content: start;
-  padding: calc(var(--s) * 26px) calc(var(--s) * 130px) calc(var(--s) * 90px);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 calc(var(--s) * 90px), #000 calc(100% - var(--s) * 90px), transparent 100%);
-          mask-image: linear-gradient(180deg, transparent 0, #000 calc(var(--s) * 90px), #000 calc(100% - var(--s) * 90px), transparent 100%);
-  transform: translateY(calc(var(--s) * 70px)); opacity: 0; transition: transform .34s cubic-bezier(.2,.8,.2,1) .04s, opacity .34s ease .04s; }
-.drawer .dgrid::-webkit-scrollbar { display: none; }
-.drawer.open .dgrid { transform: none; opacity: 1; }
-.drawer .cell { background: none; border: 0; padding: 0; color: #fff; font: inherit; cursor: pointer; display: grid; justify-items: center; row-gap: calc(var(--s) * 18px); min-width: 0; }
-.drawer .plate { display: grid; place-items: center; transition: transform .11s; }
-.drawer .cell:active .plate { transform: scale(.92); }
-.drawer .cell:focus-visible { outline: none; }
-.drawer .cell:focus-visible .plate { outline: 2px solid #fff; outline-offset: 3px; border-radius: 24%; }
-.drawer .ic { width: calc(var(--s) * 160px); height: calc(var(--s) * 160px); border-radius: 24%; display: grid; place-items: center; font-weight: 700; font-size: calc(var(--s) * 70px); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.3); }
-.drawer .lbl { font-size: calc(var(--s) * 28px); line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
-@media (prefers-reduced-motion: reduce) { .drawer, .drawer .dgrid, .drawer .dhead { transition: none; } }
+.apps .dhead { position: absolute; left: calc(var(--s) * 130px); top: calc(var(--s) * 70px); }
+.apps .dtitle { font-weight: 500; font-size: calc(var(--s) * 64px); line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.apps .dcount { font-size: calc(var(--s) * 27px); letter-spacing: .08em; color: rgba(255,255,255,.7); text-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.apps .dline { position: absolute; left: calc(var(--s) * 130px); right: calc(var(--s) * 130px); top: calc(var(--s) * 222px); height: max(1px, calc(var(--s) * 1.5px)); background: rgba(255,255,255,.15); }
+.apps .track { position: absolute; inset: 0; will-change: transform; }
+.apps .page { position: absolute; top: calc(var(--s) * 262px); width: 100%; box-sizing: border-box; padding: 0 calc(var(--s) * 130px);
+  display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: calc(var(--s) * 258px); }
+.apps .cell { display: grid; justify-items: center; align-content: start; row-gap: calc(var(--s) * 18px); min-width: 0; cursor: pointer; }
+.apps .ic { width: calc(var(--s) * 160px); height: calc(var(--s) * 160px); border-radius: 24%; display: grid; place-items: center; font-weight: 700; font-size: calc(var(--s) * 70px); color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .11s; }
+.apps .cell.pressed .ic { transform: scale(.92); }
+.apps .lbl { font-size: calc(var(--s) * 28px); line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.apps .dots { position: absolute; left: 0; right: 0; top: calc(var(--s) * 1048px); transform: translateY(-50%); display: flex; justify-content: center; gap: calc(var(--s) * 15px); }
+.apps .dot { width: calc(var(--s) * 13px); height: calc(var(--s) * 13px); border-radius: 50%; background: #fff; opacity: .35; }
 .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 28px; font-size: .9rem; line-height: 1.45; }
 .legend div { min-width: 0; }
 .legend b { display: block; font-family: var(--display); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; font-size: .75rem; color: var(--signal); margin-bottom: 2px; }
@@ -105,7 +97,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
       <canvas id="c" width="2000" height="1200" aria-label="Launcher home screen preview"></canvas>
       <div class="toast" id="toast" style="opacity:0"></div>
       <div class="sheet" id="sheet" hidden></div>
-      <div class="drawer" id="drawer" hidden></div>
+      <div class="apps" id="apps" hidden></div>
     </div>
   </div>
 
@@ -113,7 +105,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     <div><b>Tap</b><p>Tiles and sidebar icons open their app. The play, skip and seek bar control the demo song.</p></div>
     <div><b>Long-press an icon</b><p>Choose which app it opens. The real launcher remembers your pick.</p></div>
     <div><b>Long-press the background</b><p>Wallpaper, music access and switching back to your original home screen.</p></div>
-    <div><b>Four-dot button</b><p>Opens the grid of every installed app.</p></div>
+    <div><b>Swipe left</b><p>Slides in the apps page, like CarPlay. Swipe sideways between pages, and swipe right on the first page to go home. The four-dot button opens it too.</p></div>
   </section>
   <p class="note">This runs in your browser, so app launches are simulated with a message. The song and app names are examples. On the head unit, the top and bottom bars come from the system and sit over the same wallpaper.</p>
 </div>
@@ -122,7 +114,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
 (function () {
   "use strict";
   var cv = document.getElementById("c"), ctx = cv.getContext("2d");
-  var toastEl = document.getElementById("toast"), sheet = document.getElementById("sheet"), drawer = document.getElementById("drawer");
+  var toastEl = document.getElementById("toast"), sheet = document.getElementById("sheet"), appsEl = document.getElementById("apps");
   var DW = 2000, DH = 1200;
 
   // ---- layout, copied from HomeView.java
@@ -451,24 +443,41 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   }
   function toDesign(e) { var b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * DW, (e.clientY - b.top) / b.height * DH]; }
 
-  var timer = null, longFired = false, downAt = null;
+  var timer = null, longFired = false, downAt = null, swiping = false, swipeX = 0, vel = null;
   cv.addEventListener("pointerdown", function (e) {
     var p = toDesign(e); downAt = [e.clientX, e.clientY]; longFired = false; pressed = hit(p[0], p[1]);
+    swiping = false; vel = trackVel(null, e);
     try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     if (pressed === "seek") { seeking = true; seekFrac = clamp((p[0] - PROG_X0) / (PROG_X1 - PROG_X0)); return; }
     if (pressed !== "music") timer = setTimeout(function () { longFired = true; var id = pressed; pressed = null; longPress(id); }, 550);
   });
   cv.addEventListener("pointermove", function (e) {
+    if (downAt) vel = trackVel(vel, e);
+    if (downAt && !seeking && !swiping) {
+      var sdx = e.clientX - downAt[0], sdy = e.clientY - downAt[1];
+      // a clear sideways drag to the left, from anywhere, pulls in the apps page (like CarPlay)
+      if (sdx < -16 && Math.abs(sdx) > 1.5 * Math.abs(sdy)) {
+        swiping = true; clearTimeout(timer); pressed = null; swipeX = e.clientX;
+        stopAppsAnim(); if (appsProgress === 0) buildApps();
+      }
+    }
+    if (swiping) { setAppsProgress(-Math.min(0, e.clientX - swipeX) / screenW()); return; }
     if (seeking) { seekFrac = clamp((toDesign(e)[0] - PROG_X0) / (PROG_X1 - PROG_X0)); return; }
     if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 8) { clearTimeout(timer); var p = toDesign(e); if (pressed && pressed !== hit(p[0], p[1])) pressed = null; }
   });
-  cv.addEventListener("pointerup", function () {
+  cv.addEventListener("pointerup", function (e) {
     clearTimeout(timer); downAt = null;
+    if (swiping) {
+      swiping = false; pressed = null;
+      var dx = Math.min(0, e.clientX - swipeX);
+      animateApps(-dx > screenW() * .25 || velocity(vel) < -1 ? 1 : 0);
+      return;
+    }
     if (seeking) { seeking = false; song.pos = seekFrac * song.dur; song.last = performance.now(); pressed = null; return; }
     if (!longFired && pressed) tap(pressed);
     pressed = null;
   });
-  cv.addEventListener("pointercancel", function () { clearTimeout(timer); seeking = false; pressed = null; });
+  cv.addEventListener("pointercancel", function () { clearTimeout(timer); seeking = false; pressed = null; if (swiping) { swiping = false; animateApps(0); } });
   cv.addEventListener("contextmenu", function (e) { e.preventDefault(); });
   function clamp(v) { return Math.max(0, Math.min(1, v)); }
 
@@ -486,7 +495,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   function nextSong() { songIdx = (songIdx + 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; song.last = performance.now(); }
   function tap(id) {
     if (id.indexOf("tile") === 0 || id.indexOf("side") === 0) toast("Opening " + nameFor(id) + "…");
-    else if (id === "apps") { if (appsSpinStart >= 0) return; appsSpinStart = performance.now(); setTimeout(openDrawer, APPS_OPEN_DELAY_MS); }
+    else if (id === "apps") { if (appsSpinStart >= 0) return; appsSpinStart = performance.now(); setTimeout(openApps, APPS_OPEN_DELAY_MS); }
     else if (id === "clock") toast("Opening Clock…");
     else if (id === "speed") toast("On the head unit this shows your live GPS speed.");
     else if (id === "play") { song.playing = !song.playing; song.last = performance.now(); }
@@ -538,45 +547,135 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
       { label: "Choose a different home app", run: function () { toast("Opens Home app settings, where you can pick UI33 again"); } }
     ]);
   }
-  // ---- app drawer
+  // ---- apps page (CarPlay-style): same behaviour as AppsPageView.java + MainActivity
   var screenEl = document.getElementById("screen");
   function setScale() { screenEl.style.setProperty("--s", String(screenEl.clientWidth / 2000)); }
   setScale();
   if (window.ResizeObserver) new ResizeObserver(setScale).observe(screenEl); else window.addEventListener("resize", setScale);
+  function screenW() { return screenEl.clientWidth || 1; }
 
-  function closeDrawer() {
-    drawer.classList.remove("open");
-    setTimeout(function () { if (!drawer.classList.contains("open")) drawer.hidden = true; }, 230);
+  var PER_PAGE = 18, FLING = 0.9, PAGE_TURN = 0.3; // flick speed in px per ms; drag share of the screen that turns the page
+  var appsProgress = 0, appsRaf = 0, track = null, dots = [], pageCount = 1, scrollPx = 0;
+
+  // velocity from the last two pointer samples, in px per ms
+  function trackVel(v, e) { var now = performance.now(); return { x: e.clientX, t: now, px: v ? v.x : e.clientX, pt: v ? v.t : now - 16 }; }
+  function velocity(v) { return v && v.t > v.pt ? (v.x - v.px) / (v.t - v.pt) : 0; }
+
+  function setAppsProgress(p) {
+    appsProgress = Math.max(0, Math.min(1, p));
+    cv.style.transform = appsProgress ? "translateX(" + (-appsProgress * 100) + "%)" : "";
+    appsEl.style.transform = "translateX(" + ((1 - appsProgress) * 100) + "%)";
+    appsEl.hidden = appsProgress <= 0;
   }
-  function openDrawer() {
-    drawer.innerHTML = "";
-    drawer.appendChild(Object.assign(document.createElement("div"), { className: "dbg" }));
-    drawer.appendChild(Object.assign(document.createElement("div"), { className: "dtint" }));
+  function stopAppsAnim() { cancelAnimationFrame(appsRaf); }
+  function animateApps(target) {
+    stopAppsAnim();
+    var from = appsProgress, t0 = performance.now(), dur = Math.max(170, 340 * Math.abs(target - from));
+    if (from === target) { setAppsProgress(target); return; }
+    (function step(now) {
+      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 2.8);
+      setAppsProgress(from + (target - from) * e);
+      if (k < 1) appsRaf = requestAnimationFrame(step);
+    })(t0);
+  }
+  function setScroll(px) {
+    scrollPx = px;
+    if (track) track.style.transform = "translateX(" + (-px) + "px)";
+    var at = px / screenW();
+    dots.forEach(function (d, k) { d.style.opacity = String(.35 + .65 * Math.max(0, 1 - Math.abs(at - k))); });
+  }
+  function buildApps() {
+    appsEl.innerHTML = "";
+    appsEl.appendChild(Object.assign(document.createElement("div"), { className: "dbg" }));
+    appsEl.appendChild(Object.assign(document.createElement("div"), { className: "dtint" }));
     var head = document.createElement("div"); head.className = "dhead";
-    var t = document.createElement("div");
-    t.appendChild(Object.assign(document.createElement("div"), { className: "dtitle", textContent: "Apps" }));
-    t.appendChild(Object.assign(document.createElement("div"), { className: "dcount", textContent: FAKE_APPS.length + " APPS" }));
-    head.appendChild(t); drawer.appendChild(head);
-    drawer.appendChild(Object.assign(document.createElement("div"), { className: "dline" }));
-    var grid = document.createElement("div"); grid.className = "dgrid";
-    FAKE_APPS.forEach(function (a) {
-      var b = Object.assign(document.createElement("button"), { className: "cell", type: "button" });
-      var plate = Object.assign(document.createElement("span"), { className: "plate" });
-      var ic = Object.assign(document.createElement("span"), { className: "ic", textContent: a[0].charAt(0) });
-      ic.style.background = "linear-gradient(160deg," + a[1] + ", " + a[1] + "99)";
-      plate.appendChild(ic); b.appendChild(plate);
-      b.appendChild(Object.assign(document.createElement("span"), { className: "lbl", textContent: a[0] }));
-      b.addEventListener("click", function () { toast("Opening " + a[0] + "…"); closeDrawer(); });
-      grid.appendChild(b);
-    });
-    // On the head unit the system Back arrow closes this page; in the demo, tap any empty space or press Esc.
-    drawer.addEventListener("click", function (e) { if (!e.target.closest(".cell")) closeDrawer(); });
-    drawer.appendChild(grid);
-    drawer.hidden = false;
-    void drawer.offsetWidth; // let the closed state paint before animating open
-    drawer.classList.add("open");
-    grid.tabIndex = -1; grid.focus({ preventScroll: true });
+    head.appendChild(Object.assign(document.createElement("div"), { className: "dtitle", textContent: "Apps" }));
+    head.appendChild(Object.assign(document.createElement("div"), { className: "dcount", textContent: FAKE_APPS.length + " APPS" }));
+    appsEl.appendChild(head);
+    appsEl.appendChild(Object.assign(document.createElement("div"), { className: "dline" }));
+    track = Object.assign(document.createElement("div"), { className: "track" });
+    pageCount = Math.max(1, Math.ceil(FAKE_APPS.length / PER_PAGE));
+    for (var pg = 0; pg < pageCount; pg++) {
+      var page = Object.assign(document.createElement("div"), { className: "page" });
+      page.style.left = (pg * 100) + "%";
+      FAKE_APPS.slice(pg * PER_PAGE, (pg + 1) * PER_PAGE).forEach(function (a) {
+        var c = Object.assign(document.createElement("div"), { className: "cell" });
+        c.dataset.name = a[0];
+        var ic = Object.assign(document.createElement("span"), { className: "ic", textContent: a[0].charAt(0) });
+        ic.style.background = "linear-gradient(160deg," + a[1] + ", " + a[1] + "99)";
+        c.appendChild(ic);
+        c.appendChild(Object.assign(document.createElement("span"), { className: "lbl", textContent: a[0] }));
+        page.appendChild(c);
+      });
+      track.appendChild(page);
+    }
+    appsEl.appendChild(track);
+    dots = [];
+    if (pageCount > 1) {
+      var row = Object.assign(document.createElement("div"), { className: "dots" });
+      for (var k = 0; k < pageCount; k++) { var d = Object.assign(document.createElement("span"), { className: "dot" }); row.appendChild(d); dots.push(d); }
+      appsEl.appendChild(row);
+    }
+    setScroll(0);
   }
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { sheet.hidden = true; if (!drawer.hidden) closeDrawer(); } });
+  function openApps() { if (appsProgress === 0) buildApps(); animateApps(1); }
+  function snapTo(page) {
+    var from = scrollPx, to = page * screenW(), t0 = performance.now();
+    (function step(now) {
+      var k = Math.min(1, (now - t0) / 280), e = 1 - Math.pow(1 - k, 2.8);
+      setScroll(from + (to - from) * e);
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  // touch on the apps page: tap to open, hold for app info, swipe between pages, swipe right on page 1 to go home
+  var aDown = null, aStart = 0, aDrag = false, aClosing = false, aCell = null, aTimer = null, aLong = false, aVel = null;
+  appsEl.addEventListener("pointerdown", function (e) {
+    try { appsEl.setPointerCapture(e.pointerId); } catch (err) {}
+    aDown = [e.clientX, e.clientY]; aStart = scrollPx; aDrag = aClosing = aLong = false; aVel = trackVel(null, e);
+    aCell = e.target.closest(".cell"); if (aCell) aCell.classList.add("pressed");
+    clearTimeout(aTimer);
+    if (aCell) aTimer = setTimeout(function () { aLong = true; aCell.classList.remove("pressed"); toast("Opens app info for " + aCell.dataset.name); aCell = null; }, 550);
+  });
+  appsEl.addEventListener("pointermove", function (e) {
+    if (!aDown) return;
+    aVel = trackVel(aVel, e);
+    var mx = e.clientX - aDown[0], my = e.clientY - aDown[1];
+    if (!aDrag && Math.abs(mx) > 8 && Math.abs(mx) > Math.abs(my)) {
+      aDrag = true; clearTimeout(aTimer); if (aCell) aCell.classList.remove("pressed"); aCell = null;
+      aDown[0] = e.clientX; mx = 0;
+    }
+    if (!aDrag) return;
+    var target = aStart - mx, max = (pageCount - 1) * screenW();
+    if (target < 0) { aClosing = true; setScroll(0); stopAppsAnim(); setAppsProgress(1 + target / screenW()); }
+    else {
+      if (aClosing) { aClosing = false; setAppsProgress(1); }
+      setScroll(target > max ? max + (target - max) * .3 : target);
+    }
+  });
+  function aEnd(e, cancelled) {
+    if (!aDown) return;
+    clearTimeout(aTimer);
+    var v = cancelled ? 0 : velocity(aVel);
+    if (aDrag) {
+      if (aClosing) animateApps((1 - appsProgress) > .25 || v > 1 ? 0 : 1);
+      else {
+        var from = Math.round(aStart / screenW()), moved = scrollPx / screenW() - from, page = from;
+        if (moved > PAGE_TURN || (v < -FLING && moved > .02)) page = from + 1;
+        else if (moved < -PAGE_TURN || (v > FLING && moved < -.02)) page = from - 1;
+        snapTo(Math.max(0, Math.min(pageCount - 1, page)));
+      }
+    } else if (aCell && !aLong && !cancelled) {
+      var name = aCell.dataset.name;
+      toast("Opening " + name + "…");
+      setTimeout(function () { setAppsProgress(0); }, 400);
+    }
+    if (aCell) aCell.classList.remove("pressed");
+    aDown = null; aDrag = aClosing = false; aCell = null;
+  }
+  appsEl.addEventListener("pointerup", function (e) { aEnd(e, false); });
+  appsEl.addEventListener("pointercancel", function (e) { aEnd(e, true); });
+  appsEl.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { sheet.hidden = true; if (appsProgress > 0) animateApps(0); } });
 })();
 </script>

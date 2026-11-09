@@ -32,7 +32,10 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     private static final int REQ_HOME = 43;
     private boolean homePromptShown; // once per app start
     private HomeView home;
-    private DrawerView drawer;
+    private AppsPageView apps;
+    /** 0 = home screen showing, 1 = apps page showing; anything between is mid-swipe. */
+    private float appsProgress = 0f;
+    private android.animation.ValueAnimator appsAnim;
     private MediaHelper media;
     private SpeedHelper speed;
 
@@ -54,15 +57,15 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
         media = new MediaHelper(this, this);
         speed = new SpeedHelper(this, this);
         home = new HomeView(this, this, media, speed);
-        drawer = new DrawerView(this, new DrawerView.Callback() {
+        apps = new AppsPageView(this, new AppsPageView.Callback() {
             @Override public void onLaunch(Slots.AppEntry app) {
                 Intent li = new Intent(Intent.ACTION_MAIN);
                 li.addCategory(Intent.CATEGORY_LAUNCHER);
                 li.setComponent(app.cn);
                 li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 if (Slots.start(MainActivity.this, li)) {
-                    // close the drawer once the app is in front, so Home brings back the home screen
-                    drawer.postDelayed(new Runnable() { @Override public void run() { drawer.hide(false); } }, 400);
+                    // once the app is in front, quietly put the home screen back for when Home is pressed
+                    apps.postDelayed(new Runnable() { @Override public void run() { setAppsProgress(0f); } }, 400);
                 } else {
                     Toast.makeText(MainActivity.this, "Couldn't open " + app.label, Toast.LENGTH_SHORT).show();
                 }
@@ -71,12 +74,19 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
                 Slots.start(MainActivity.this, new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                         Uri.parse("package:" + app.cn.getPackageName())));
             }
-            @Override public void onClose() { drawer.hide(true); }
+            @Override public void onDragClose(float dxPx) {
+                stopAppsAnim();
+                setAppsProgress(1f - dxPx / pageWidth());
+            }
+            @Override public void onDragCloseEnd(float dxPx, float velocityPx) {
+                boolean close = dxPx > pageWidth() * 0.25f || velocityPx > 1000f;
+                animateApps(close ? 0f : 1f);
+            }
         });
-        drawer.setVisibility(View.GONE);
+        apps.setVisibility(View.GONE);
         FrameLayout root = new FrameLayout(this);
         root.addView(home);
-        root.addView(drawer);
+        root.addView(apps);
         setContentView(root);
         applyWallpaper(loadWallpaper());
 
@@ -162,19 +172,65 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     }
 
     @Override public void onBackPressed() {
-        // Back closes the app drawer; on the home screen itself there is nothing to go back to.
-        if (drawer.isShowing()) drawer.hide(true);
+        // Back slides the apps page away; on the home screen itself there is nothing to go back to.
+        if (appsProgress > 0f) animateApps(0f);
     }
 
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        // Home pressed while we're already in front: close the drawer.
-        if (drawer != null && drawer.isShowing()) drawer.hide(true);
+        // Home pressed while we're already in front: back to the home screen.
+        if (apps != null && appsProgress > 0f) animateApps(0f);
     }
 
     private void applyWallpaper(Bitmap b) {
         home.setWallpaper(b);
-        drawer.setWallpaper(b);
+        apps.setWallpaper(b);
+    }
+
+    // ------------------------------------------------------------------ apps page (CarPlay-style swipe)
+
+    private float pageWidth() {
+        int w = home.getWidth();
+        return w > 0 ? w : getResources().getDisplayMetrics().widthPixels;
+    }
+
+    /** Slide home and the apps page together: home moves left as the apps page comes in from the right. */
+    private void setAppsProgress(float pr) {
+        appsProgress = Math.max(0f, Math.min(1f, pr));
+        float w = pageWidth();
+        home.setTranslationX(-w * appsProgress);
+        apps.setTranslationX(w * (1f - appsProgress));
+        apps.setVisibility(appsProgress > 0f ? View.VISIBLE : View.GONE);
+    }
+
+    private void stopAppsAnim() {
+        if (appsAnim != null) appsAnim.cancel();
+    }
+
+    private void animateApps(float target) {
+        stopAppsAnim();
+        float from = appsProgress;
+        if (from == target) { setAppsProgress(target); return; }
+        appsAnim = android.animation.ValueAnimator.ofFloat(from, target);
+        appsAnim.setDuration(Math.max(170, Math.round(340 * Math.abs(target - from))));
+        appsAnim.setInterpolator(new android.view.animation.DecelerateInterpolator(1.8f));
+        appsAnim.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+            @Override public void onAnimationUpdate(android.animation.ValueAnimator a) {
+                setAppsProgress((Float) a.getAnimatedValue());
+            }
+        });
+        appsAnim.start();
+    }
+
+    @Override public void onHomeSwipe(float dxPx) {
+        stopAppsAnim();
+        if (appsProgress == 0f) apps.prepare(Slots.launchableApps(this));
+        setAppsProgress(-dxPx / pageWidth());
+    }
+
+    @Override public void onHomeSwipeEnd(float dxPx, float velocityPx) {
+        boolean open = -dxPx > pageWidth() * 0.25f || velocityPx < -1000f;
+        animateApps(open ? 1f : 0f);
     }
 
     @Override public void onSpeedChanged() {
@@ -225,7 +281,8 @@ public class MainActivity extends Activity implements HomeView.Host, MediaHelper
     @Override public void onSlotLongPress(String slot) { Slots.pick(this, slot); }
 
     @Override public void onAppsTap() {
-        drawer.show(Slots.launchableApps(this));
+        if (appsProgress == 0f) apps.prepare(Slots.launchableApps(this));
+        animateApps(1f);
     }
 
     @Override public void onClockTap() {
