@@ -62,7 +62,7 @@ public class HomeView extends View {
     static final float TITLE_Y = 857f, ARTIST_Y = 886f;
     static final float SIDE_X = 117f;
     static final float[] SIDE_Y = {330f, 487f, 643f, 797f};
-    static final String[] SIDE_SLOTS = {Slots.SIDE_SETTINGS, Slots.SIDE_CAMERA, Slots.SIDE_BT, Slots.SIDE_NAV};
+    static final String[] SIDE_SLOTS = {Slots.SIDE_WIFI, Slots.SIDE_SETTINGS, Slots.SIDE_BT, Slots.SIDE_NAV};
     static final float PROG_Y = 917f, PROG_X0 = 335f, PROG_X1 = 740f;
     static final float CTRL_Y = 1000f;
     static final float[] CTRL_X = {388f, 537f, 685f};
@@ -376,21 +376,27 @@ public class HomeView extends View {
             c.save();
             float s = press(SIDE_SLOTS[i]);
             c.scale(s, s, x, y);
-            switch (i) {
+            String slot = SIDE_SLOTS[i];
+            if (Slots.SIDE_WIFI.equals(slot)) {
+                // Wi-Fi: dot and two arcs fanning upward
+                float cy = y + 19;
+                white(6.5f);
+                tmp.set(x - 21, cy - 21, x + 21, cy + 21);
+                c.drawArc(tmp, 225, 90, false, p);
+                tmp.set(x - 38, cy - 38, x + 38, cy + 38);
+                c.drawArc(tmp, 225, 90, false, p);
+                white(0);
+                c.drawCircle(x, cy, 7, p);
+                c.restore();
+                continue;
+            }
+            int icon = Slots.SIDE_SETTINGS.equals(slot) ? 0 : Slots.SIDE_BT.equals(slot) ? 2 : 3;
+            switch (icon) {
                 case 0: // settings target
                     white(6.5f);
                     c.drawCircle(x, y, 24, p);
                     white(0);
                     c.drawCircle(x, y, 10, p);
-                    break;
-                case 1: // camera
-                    white(6f);
-                    tmp.set(x - 27, y - 18, x + 27, y + 22);
-                    c.drawRoundRect(tmp, 7, 7, p);
-                    c.drawCircle(x, y + 2, 10, p);
-                    white(0);
-                    tmp.set(x - 12, y - 27, x + 12, y - 16);
-                    c.drawRoundRect(tmp, 3, 3, p);
                     break;
                 case 2: // bluetooth
                     white(6f);

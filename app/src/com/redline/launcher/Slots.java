@@ -31,6 +31,7 @@ import java.util.Locale;
 /** Every tappable shortcut on the home screen is a "slot" that opens an app the user can change. */
 public class Slots {
 
+    public static final String SIDE_WIFI = "side_wifi";
     public static final String SIDE_SETTINGS = "side_settings";
     public static final String SIDE_CAMERA = "side_camera";
     public static final String SIDE_BT = "side_bt";
@@ -42,6 +43,7 @@ public class Slots {
     public static final String TILE_YT = "tile_4";
 
     public static String title(String slot) {
+        if (SIDE_WIFI.equals(slot)) return "Wi-Fi button";
         if (SIDE_SETTINGS.equals(slot)) return "Settings button";
         if (SIDE_CAMERA.equals(slot)) return "Camera button";
         if (SIDE_BT.equals(slot)) return "Bluetooth button";
@@ -76,6 +78,7 @@ public class Slots {
 
     /** Intent used when no installed app matches. */
     private static Intent fallback(String slot) {
+        if (SIDE_WIFI.equals(slot)) return new Intent(Settings.ACTION_WIFI_SETTINGS);
         if (SIDE_SETTINGS.equals(slot)) return new Intent(Settings.ACTION_SETTINGS);
         if (SIDE_BT.equals(slot)) return new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
         if (SIDE_NAV.equals(slot)) return new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q="));

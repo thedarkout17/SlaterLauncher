@@ -124,7 +124,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   var APPS_SHAPE = [-60, 935, 215, 880, 215, 1105, -60, 1105];
   var BEVEL_RADIUS = 16;
   var SIDE_X = 117, SIDE_Y = [330, 487, 643, 797];
-  var SIDE_NAMES = ["Settings", "Front Camera", "Bluetooth", "Maps"];
+  var SIDE_NAMES = ["Wi-Fi", "Settings", "Bluetooth", "Maps"];
   var PROG_Y = 917, PROG_X0 = 335, PROG_X1 = 740, CTRL_Y = 1000, CTRL_X = [388, 537, 685];
   var TILE_X = [913, 1115, 1322, 1541, 1775], TILE_Y = 1017, TILE = 168;
   var TILE_NAMES = ["Car Link 2.0", "Front Video", "Equalizer", "Music Player", "YouTube"];
@@ -265,8 +265,13 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
     for (var i = 0; i < 4; i++) {
       var x = SIDE_X, y = SIDE_Y[i];
       ctx.save(); pressScale("side" + i, x, y);
-      if (i === 0) { white(6.5); ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.fill(); }
-      if (i === 1) { white(6); rr([x - 27, y - 18, x + 27, y + 22], 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y + 2, 10, 0, 7); ctx.stroke(); rr([x - 12, y - 27, x + 12, y - 16], 3); ctx.fill(); }
+      if (i === 0) {  // Wi-Fi: dot and two arcs fanning upward
+        var wy = y + 19; white(6.5);
+        ctx.beginPath(); ctx.arc(x, wy, 21, 1.25 * Math.PI, 1.75 * Math.PI); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, wy, 38, 1.25 * Math.PI, 1.75 * Math.PI); ctx.stroke();
+        white(); ctx.beginPath(); ctx.arc(x, wy, 7, 0, 7); ctx.fill();
+      }
+      if (i === 1) { white(6.5); ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 10, 0, 7); ctx.fill(); }
       if (i === 2) { white(6); ctx.beginPath(); ctx.moveTo(x - 17, y - 14); ctx.lineTo(x + 15, y + 15); ctx.lineTo(x, y + 30); ctx.lineTo(x, y - 30); ctx.lineTo(x + 15, y - 15); ctx.lineTo(x - 17, y + 14); ctx.stroke(); }
       if (i === 3) {
         white(6); ctx.beginPath(); ctx.moveTo(x, y + 30);
@@ -489,7 +494,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: 
   }
   function slotTitle(id) {
     return id.indexOf("tile") === 0 ? ["Car Link", "Front Video", "Equalizer", "Music", "YouTube"][+id.slice(4)] + " tile"
-      : ["Settings", "Camera", "Bluetooth", "Navigation"][+id.slice(4)] + " button";
+      : ["Wi-Fi", "Settings", "Bluetooth", "Navigation"][+id.slice(4)] + " button";
   }
 
   function nextSong() { songIdx = (songIdx + 1) % songs.length; song.title = songs[songIdx][0]; song.artist = songs[songIdx][1]; song.pos = 0; song.last = performance.now(); }
